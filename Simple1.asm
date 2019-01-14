@@ -6,22 +6,43 @@
 	
 	org 0x100		    ; Main code starts here at address 0x100
 
+	
+;	Data
+	constant    counter=0x10
+	constant    outputC=0x06
+	
+	
 start
+;	Initialise
+;	movlw	0xff
+;	movwf	counter		    ; Initialise counter
+	
 	movlw	0xff
-	movwf	TRISD, ACCESS
+	movwf	TRISD, ACCESS	    ; Port D all inputs
 	movlw 	0x0
 	movwf	TRISC, ACCESS	    ; Port C all outputs 
+	
+	
+	
 	bra 	test
-loop	movff 	0x06, PORTC
-	incf 	0x06, W, ACCESS
-test	movwf	0x06, ACCESS	    ; Test for end of loop condition
+loop	call	dloop		    ; Delay
+	movff 	outputC, PORTC	    ; Set PORTC to outputC
+	incf 	outputC, W, ACCESS  ; W = outputC + 1
+test	movwf	outputC, ACCESS	    ; Test for end of loop condition
 	
-;	movlw 	0x63
-	movf	PORTD, W, ACCESS
-;	movlw	0xff
+	movf	PORTD, W, ACCESS    ; W = PORTD
 	
-	cpfsgt 	0x06, ACCESS
-	bra 	loop		    ; Not yet finished goto start of loop again
+	cpfsgt 	outputC, ACCESS	    ; Skip if outputC > W?
+	bra 	loop		    ; Loop to inc PORTC, read PORTD
 	goto 	0x0		    ; Re-run program from start
+	
+	
+;	Delay subroutine
+dloop	decfsz	counter, F, ACCESS
+	bra	dloop
+	movlw	0xff
+	movwf	counter
+	return	0
+	
 	
 	end
