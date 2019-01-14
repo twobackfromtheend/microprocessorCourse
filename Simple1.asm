@@ -2,68 +2,33 @@
 	
 	code
 	org 0x0
-	goto	start
+	goto	setup
 	
 	org 0x100		    ; Main code starts here at address 0x100
 
+	; ******* Programme FLASH read Setup Code ****  
+setup	bcf	EECON1, CFGS	; point to Flash program memory  
+	bsf	EECON1, EEPGD 	; access Flash program memory
+	goto	start
+	; ******* My data and where to put it in RAM *
+myTable data	"This is just some data"
+	constant 	myArray=0x400	; Address in RAM for data
+	constant 	counter=0x10	; Address of counter variable
+	; ******* Main programme *********************
+start 	lfsr	FSR0, myArray	; Load FSR0 with address in RAM	
+	movlw	upper(myTable)	; address of data in PM
+	movwf	TBLPTRU		; load upper bits to TBLPTRU
+	movlw	high(myTable)	; address of data in PM
+	movwf	TBLPTRH		; load high byte to TBLPTRH
+	movlw	low(myTable)	; address of data in PM
+	movwf	TBLPTRL		; load low byte to TBLPTRL
+	movlw	.22		; 22 bytes to read
+	movwf 	counter		; our counter register
+loop 	tblrd*+			; move one byte from PM to TABLAT, increment TBLPRT
+	movff	TABLAT, POSTINC0	; move read data from TABLAT to (FSR0), increment FSR0	
+	decfsz	counter		; count down to zero
+	bra	loop		; keep going until finished
 	
-;	Data
-	constant    counter=0x10
-	constant    counter2=0x16
-	constant    outputC=0x06
-	
-	
-start
-;	Initialise
-;	movlw	0xff
-;	movwf	counter		    ; Initialise counter
-	
-	movlw	0xff
-	movwf	TRISD, ACCESS	    ; Port D all inputs
-	movlw 	0x0
-	movwf	TRISC, ACCESS	    ; Port C all outputs 
-	
-;	Reset values to avoid state from previous run persisting
-	movlw	0x00
-	movwf	outputC
-	
-	
-	
-	bra 	test
-loop	call	dloop2		    ; Delay
-	movff 	outputC, PORTC	    ; Set PORTC's value to outputC
-	incf 	outputC, W, ACCESS  ; W = outputC + 1
-test	movwf	outputC, ACCESS	    ; outputC = W (=outputC + 1)
-	
-;	movf	PORTD, W, ACCESS    ; W = PORTD
-	movlw	0xff		    ; W = 0xff
-	
-	cpfsgt 	outputC, ACCESS	    ; Skip if outputC > W?
-	bra 	loop		    ; Loop to inc PORTC, read PORTD
-	goto 	0x0		    ; Re-run program from start
-	
-	
-	
-	
-	
-;	256x Delay
-dloop2	call	dloop
-	decfsz	counter2, F, ACCESS
-	bra	dloop2
-;	Reset counter to 255
-	movlw	0xff
-	movwf	counter2
-	return	0
-	
-	
-	
-;	Delay subroutine (set by PORT D)
-dloop	decfsz	counter, F, ACCESS
-	bra	dloop
-;	Next delay set by PORTD
-	movf	PORTD, W, ACCESS    ; W = PORTD
-	movwf	counter
-	return	0
-	
-	
+	goto	0
+
 	end
