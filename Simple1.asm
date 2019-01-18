@@ -10,7 +10,8 @@
 	constant    dCounter0=0x16
 	constant    dCounter1=0x20
 	
-	constant    readData
+	constant    readData=0x40
+	constant    writeData=0x48
 	
 	
 ;	Setup
@@ -22,6 +23,9 @@ setup	clrf	TRISC		    ; Port C all outputs (display)
 	movlw	0xF
 	movwf	PORTD
 	
+;	TODO: set output data to something not 0xf
+	movlw	0xf
+	movwf	writeData
 	goto	start
 	
 	
@@ -33,8 +37,7 @@ start	call	masterW
 ;	masterw has to handle changing state to write and 
 ;	returning it back to read
 masterW	clrf	TRISE		    ; Set E to outputs
-;	TODO: set output data to something not 0xf
-	movlw	0x0f
+	movf	writeData, W	    
 	movwf	LATE		    ; Move thing to write to LATE
 	call	write1		    ; Lower and raise
 	setf	TRISE		    ; Return E to tristate
@@ -59,10 +62,11 @@ read1	movlw	0xD		    ; Set OE1 low, OE2 high, CP1 & CP2 high
 	return	0
 	
 dispC	movff	readData, PORTC
+	return	0
 	
 	
 ;	256x Delay
-dLoop1	call	dloop0
+dLoop1	call	dLoop0
 	decfsz	dCounter1, F, ACCESS
 	bra	dLoop1
 ;	Reset counter to 255
