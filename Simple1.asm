@@ -13,15 +13,28 @@
 	constant    readData=0x40
 	constant    writeData=0x48
 	
+	constant    read12=0x56
+	
 	
 ;	Setup
 setup	clrf	TRISC		    ; Port C all outputs (display)
 	clrf	TRISD		    ; Port D all outputs (controller)
 	setf	TRISE		    ; Port E tristate (read/write)
+	clrf	TRISH		    ; Port H all outputs (display 2)
 	
+;	Initialise PortC
+	movlw	0x0
+	movwf	PORTC
+;	Initialise PortH
+	movlw	0x0
+	movwf	PORTH
+	
+;	Initialise PortD
 ;	Keep CP1, CP2, OE1, OE2 high
 	movlw	0xF
 	movwf	PORTD
+	
+	
 	
 ;	TODO: set output data to something not 0xf
 	movlw	0xf
@@ -30,38 +43,80 @@ setup	clrf	TRISC		    ; Port C all outputs (display)
 	
 	
 	
-start	call	masterW
+start	call	write1
+	
+	movlw	0xf0
+	movwf	writeData
+	call	write2
+	
 	call	read1
+	call	dispC
+	call	read2
+	call	dispH
+	
 	
 ;	Defaults to read state (E tristate). 
 ;	masterw has to handle changing state to write and 
 ;	returning it back to read
-masterW	clrf	TRISE		    ; Set E to outputs
+	
+	
+write1	clrf	TRISE		    ; Set E to outputs
 	movf	writeData, W	    
 	movwf	LATE		    ; Move thing to write to LATE
-	call	write1		    ; Lower and raise
+	
+	movlw	0xE		    ; Set OE1, OE2 high - both off
+	movwf	PORTD		    ; and CP1 low (CP2 kept high)
+	
+	call	dLoop0
+	
+	movlw	0xF		    ; Set CP1 high (keep OE1, OE2, CP2 high)
+	movwf	PORTD
+	
 	setf	TRISE		    ; Return E to tristate
 	return	0
 	
+		
+write2	clrf	TRISE		    ; Set E to outputs
+	movf	writeData, W	    
+	movwf	LATE		    ; Move thing to write to LATE
 	
-write1	movlw	0xE		    ; Set OE1, OE2 high - both off
-	movwf	PORTD		    ; and CP1 low (CP2 kept high)
-				    ; DO NOT SET CLOCK PULSE HIGH
-;	call	dLoop0
-	movlw	0xF		    ; Set CP1 high (keep OE1, OE2, CP2 high)
+	movlw	0xB		    ; Set OE1, OE2 high - both off
+	movwf	PORTD		    ; and CP2 low (CP1 kept high)
+			
+	call	dLoop0
+
+	movlw	0xF		    ; Set CP2 high (keep OE1, OE2, CP1 high)
 	movwf	PORTD
-;	call	dLoop0
-	return	0
 	
+	setf	TRISE		    ; Return E to tristate
+	return	0
 	
 read1	movlw	0xD		    ; Set OE1 low, OE2 high, CP1 & CP2 high
 	movwf	PORTD
-	
+	call	dLoop0		    ; Allow for delay of memory chip to switch to output
 	movff	PORTE, readData
+	
+	movlw	0xF
+	movwf	PORTD		    ; Reset PORTD
+;	call	dLoop1
+	return	0
+		
+read2	movlw	0x7		    ; Set OE1 high, OE2 low, CP1 & CP2 high
+	movwf	PORTD
+	call	dLoop0		    ; Allow for delay of memory chip to switch to output
+	movff	PORTE, readData
+	
+	movlw	0xF
+	movwf	PORTD		    ; Reset PORTD
 ;	call	dLoop1
 	return	0
 	
 dispC	movff	readData, PORTC
+	call	dLoop1
+	return	0
+
+dispH	movff	readData, PORTH
+	call	dLoop1
 	return	0
 	
 	
