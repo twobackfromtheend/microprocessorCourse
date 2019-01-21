@@ -34,20 +34,19 @@ setup	clrf	TRISC		    ; Port C all outputs (display)
 	movlw	0xF
 	movwf	PORTD
 	
-	
-	
-;	TODO: set output data to something not 0xf
-	movlw	0xf
-	movwf	writeData
+
 	goto	start
 	
 	
+start	movlw	0xf0
+	movwf	writeData
+	call	write1
 	
-start	call	write1
-	
-	movlw	0xf0
+	movlw	0x0f
 	movwf	writeData
 	call	write2
+	
+;	call	write12
 	
 	call	read1
 	call	dispC
@@ -111,6 +110,20 @@ read2	movlw	0x7		    ; Set OE1 high, OE2 low, CP1 & CP2 high
 ;	call	dLoop1
 	return	0
 	
+;	Writes CHIP1 to CHIP2
+write12	movlw	0x9	    	    ; Set OE1 low, CP2 low
+	movwf	PORTD
+	call	dLoop0
+	movlw	0xD		    ; Set OE1 low, CP2 high (trigger write)
+	movwf	PORTD
+	call	dLoop0
+	
+	movlw	0xF
+	movwf	PORTD		    ; Reset PORTD
+	return	0
+	
+	
+	
 dispC	movff	readData, PORTC
 	call	dLoop1
 	return	0
@@ -137,6 +150,7 @@ dLoop0	decfsz	dCounter0, F, ACCESS
 ;	Next delay set by PORTD
 	movlw	0xFF
 	movwf	dCounter0	    ; dcounter = w: reset dcounter0 to FF
+	
 	return	0
 	
 	
