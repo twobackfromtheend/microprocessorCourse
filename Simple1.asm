@@ -7,131 +7,58 @@
 	org 0x100		    ; Main code starts here at address 0x100
 
 ;	DATA
-	constant    dCounter0=0x16
+;myTable	db	0x01,0x02,0x04,0x08,0x10,0x20,0x40,0x80 ; Moving high bit
+;myTable	db	0xFE,0xFD,0xFB,0xF7,0xEF,0xDF,0xBF,0x7F	; Moving low bit
+myTable	db	0xFF,0x7E,0x3C,0x18,0x00,0x18,0x3C,0x7E,0xFF ; in n out
+	constant    dCounter0=0x08
 	constant    dCounter1=0x20
+	constant    dCounter2=0x30
 	
-	constant    readData=0x40
-	constant    writeData=0x48
-	
-	constant    read12=0x56
+	constant    tableCounter=0x40
 	
 	
 ;	Setup
-setup	clrf	TRISC		    ; Port C all outputs (display)
-	clrf	TRISD		    ; Port D all outputs (controller)
-	setf	TRISE		    ; Port E tristate (read/write)
-	clrf	TRISH		    ; Port H all outputs (display 2)
-	
-;	Initialise PortC
-	movlw	0x0
-	movwf	PORTC
-;	Initialise PortH
-	movlw	0x0
-	movwf	PORTH
-	
-;	Initialise PortD
-;	Keep CP1, CP2, OE1, OE2 high
-	movlw	0xF
-	movwf	PORTD
-	
-
+setup	call	SPI_MasterInit
 	goto	start
 	
 	
-start	movlw	0xf0
-	movwf	writeData
-	call	write1
+start	call	LOOP_OVER_MYTABLE
 	
-	movlw	0x0f
-	movwf	writeData
-	call	write2
+;	CHUNK LOADS 1 BYTE FROM MYTABLE
+;	CREATES TBLPTR THAT POINTS TO MYTABLE
+LOOP_OVER_MYTABLE
+	movlw	upper(myTable)	; address of data in PM
+	movwf	TBLPTRU		; load upper bits to TBLPTRU
+	movlw	high(myTable)	; address of data in PM
+	movwf	TBLPTRH		; load high byte to TBLPTRH
+	movlw	low(myTable)	; address of data in PM
+	movwf	TBLPTRL		; load low byte to TBLPTRL
 	
-;	call	write12
+	movlw	.8		; 8 bytes to read - counter
+	movwf	tableCounter	; Initialise counter
 	
-	call	read1
-	call	dispC
-	call	read2
-	call	dispH
+tableLoop
+	call	dLoop2
+	tblrd*+			; move one byte from PM to TABLAT, increment TBLPTR
+	movf	TABLAT, W	; Move TABLAT (TBLPTR value) to W
 	
+	; DO THING WITH DATA IN W
+	call	SPI_MasterTransmit
 	
-;	Defaults to read state (E tristate). 
-;	masterw has to handle changing state to write and 
-;	returning it back to read
-	
-	
-write1	clrf	TRISE		    ; Set E to outputs
-	movf	writeData, W	    
-	movwf	LATE		    ; Move thing to write to LATE
-	
-	movlw	0xE		    ; Set OE1, OE2 high - both off
-	movwf	PORTD		    ; and CP1 low (CP2 kept high)
-	
-	call	dLoop0
-	
-	movlw	0xF		    ; Set CP1 high (keep OE1, OE2, CP2 high)
-	movwf	PORTD
-	
-	setf	TRISE		    ; Return E to tristate
-	return	0
-	
-		
-write2	clrf	TRISE		    ; Set E to outputs
-	movf	writeData, W	    
-	movwf	LATE		    ; Move thing to write to LATE
-	
-	movlw	0xB		    ; Set OE1, OE2 high - both off
-	movwf	PORTD		    ; and CP2 low (CP1 kept high)
-			
-	call	dLoop0
+	decfsz	tableCounter	; Decrement counter, skip if zero
+	bra	tableLoop	; keep going until finished
+	return
 
-	movlw	0xF		    ; Set CP2 high (keep OE1, OE2, CP1 high)
-	movwf	PORTD
 	
-	setf	TRISE		    ; Return E to tristate
-	return	0
-	
-read1	movlw	0xD		    ; Set OE1 low, OE2 high, CP1 & CP2 high
-	movwf	PORTD
-	call	dLoop0		    ; Allow for delay of memory chip to switch to output
-	movff	PORTE, readData
-	
-	movlw	0xF
-	movwf	PORTD		    ; Reset PORTD
-;	call	dLoop1
-	return	0
-		
-read2	movlw	0x7		    ; Set OE1 high, OE2 low, CP1 & CP2 high
-	movwf	PORTD
-	call	dLoop0		    ; Allow for delay of memory chip to switch to output
-	movff	PORTE, readData
-	
-	movlw	0xF
-	movwf	PORTD		    ; Reset PORTD
-;	call	dLoop1
-	return	0
-	
-;	Writes CHIP1 to CHIP2
-write12	movlw	0x9	    	    ; Set OE1 low, CP2 low
-	movwf	PORTD
-	call	dLoop0
-	movlw	0xD		    ; Set OE1 low, CP2 high (trigger write)
-	movwf	PORTD
-	call	dLoop0
-	
-	movlw	0xF
-	movwf	PORTD		    ; Reset PORTD
-	return	0
-	
-	
-	
-dispC	movff	readData, PORTC
-	call	dLoop1
-	return	0
 
-dispH	movff	readData, PORTH
-	call	dLoop1
+;	10x Delay
+dLoop2	call	dLoop1
+	decfsz	dCounter2, F, ACCESS
+	bra	dLoop2
+;	Reset counter to 10
+	movlw	0xA
+	movwf	dCounter2
 	return	0
-	
 	
 ;	256x Delay
 dLoop1	call	dLoop0
@@ -147,12 +74,29 @@ dLoop1	call	dLoop0
 ;	Delay subroutine (ff)
 dLoop0	decfsz	dCounter0, F, ACCESS
 	bra	dLoop0
-;	Next delay set by PORTD
 	movlw	0xFF
 	movwf	dCounter0	    ; dcounter = w: reset dcounter0 to FF
 	
 	return	0
 	
+	
+; Provided routines	
+SPI_MasterInit ; Set Clock edge to negative
+	bcf	SSP2STAT, CKE
+	; MSSP enable; CKP=1; SPI master, clock=Fosc/64 (1MHz)
+	movlw	(1<<SSPEN)|(1<<CKP)|(0x02)
+	movwf	SSP2CON1
+	; SDO2 output; SCK2 output
+	bcf	TRISD, SDO2
+	bcf	TRISD, SCK2
+	return
+SPI_MasterTransmit ; Start transmission of data (held in W)
+	movwf	SSP2BUF
+Wait_Transmit ; Wait for transmission to complete
+	btfss	PIR2, SSP2IF
+	bra	Wait_Transmit
+	bcf	PIR2, SSP2IF ; clear interrupt flag
+	return
 	
 ;
 ;	; ******* Programme FLASH read Setup Code ****  
