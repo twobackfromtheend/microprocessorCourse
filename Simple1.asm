@@ -3,7 +3,10 @@
 	extern	UART_Setup, UART_Transmit_Message  ; external UART subroutines
 	extern  LCD_Setup, LCD_Write_Message, LCD_Clear, LCD_Cursor_To_Start, LCD_Cursor_To_Line_2	    ; external LCD subroutines
 	extern	KP_Setup, KP_Read_Column, KP_Read, KP_Decode, KP_Wait_For_Release, KP_Decode_Table
-	
+	extern	LCD_Write_Hex			    ; external LCD subroutines
+	extern  ADC_Setup, ADC_Read		    ; external ADC routines
+	extern	Mul_8_16, multiplier_16
+
 acs0	udata_acs   ; reserve data space in access ram
 ;counter	    res 1   ; reserve one byte for a counter variable
 ;delay_count res 1   ; reserve one byte for counter in the delay routine
@@ -28,28 +31,49 @@ setup
 	call	UART_Setup	; setup UART
 	call	LCD_Setup	; setup LCD
 	call	KP_Setup	; setup Keypad
+	call	ADC_Setup
 ;	
 	clrf	TRISD		; PORT D all outputs
 	clrf	LATD
 	goto	start
 	
 	; ******* Main programme ****************************************
-start 	nop
-	call	KP_Read
-	call	KP_Decode_Table
-	call	Write_Char_To_LCD
-
-	movlw	myTable_l	; output message to UART
-	lfsr	FSR2, myArray
-	call	UART_Transmit_Message
+start 	lfsr	FSR0, multiplier_16
+	movlw	0xD2
+	movwf	POSTINC0
+	movlw	0x04
+	movwf	INDF0
+	movlw	0x8A
+	call	Mul_8_16
+;	movlw	0x02
+;	movf	PLUSW2, W
+	movf	POSTINC2, W
+	call	LCD_Write_Hex
+	movf	POSTINC2, W
+	call	LCD_Write_Hex
+	movf	POSTINC2, W
+	call	LCD_Write_Hex
+	goto	$
 	
-measure_loop
-	call	ADC_Read
-	movf	ADRESH,W
-	call	LCD_Write_Hex
-	movf	ADRESL,W
-	call	LCD_Write_Hex
-	goto	measure_loop		; goto current line in code
+;measure_loop
+;	call	ADC_Read
+;	movf	ADRESH, W
+;	call	LCD_Write_Hex
+;	movf	ADRESL, W
+;	call	LCD_Write_Hex
+;	bra	measure_loop
+	
+	
+	
+;	call	KP_Read
+;	call	KP_Decode_Table
+;	call	Write_Char_To_LCD
+;
+;	movlw	myTable_l	; output message to UART
+;	lfsr	FSR2, myArray
+;	call	UART_Transmit_Message
+	
+
 ;	call	Echo_E_To_D
 ;	call	KP_Decode
 ;	call	Write_Char_To_LCD
