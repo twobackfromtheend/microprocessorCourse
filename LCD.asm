@@ -1,6 +1,6 @@
 #include p18f87k22.inc
 
-    global  LCD_Setup, LCD_Write_Message, LCD_Clear, LCD_Cursor_To_Start, LCD_Cursor_To_Line_2
+    global  LCD_Setup, LCD_Write_Message, LCD_Clear, LCD_Cursor_To_Start, LCD_Cursor_To_Line_2, LCD_Write_Hex
 
 acs0    udata_acs   ; named variables in access ram
 LCD_cnt_l   res 1   ; reserve 1 byte for variable LCD_cnt_l
@@ -9,6 +9,9 @@ LCD_cnt_ms  res 1   ; reserve 1 byte for ms counter
 LCD_tmp	    res 1   ; reserve 1 byte for temporary use
 LCD_counter res 1   ; reserve 1 byte for counting through message
 LCD_cursor_counter  res 1   ; reserve 1 byte for counting cursor shifts
+
+acs_ovr	access_ovr
+LCD_hex_tmp res 1   ; reserve 1 byte for variable LCD_hex_tmp	
 
 	constant    LCD_E=5	; LCD enable bit
     	constant    LCD_RS=4	; LCD register select bit
