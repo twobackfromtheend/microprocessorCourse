@@ -69,7 +69,7 @@ KP_Read_Row
 	movlw	0xF0
 	movwf	TRISE			; Configure E 0-3 outputs, 4-7 inputs
 	;	TODO: delay to allow output pins to settle
-	movlw	.2
+	movlw	.1
 	call	KP_delay_ms
 	return
 
