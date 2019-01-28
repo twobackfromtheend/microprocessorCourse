@@ -1,13 +1,14 @@
 #include p18f87k22.inc
 
-    global  LCD_Setup, LCD_Write_Message
+    global  LCD_Setup, LCD_Write_Message, LCD_Clear, LCD_Cursor_To_Start, LCD_Cursor_To_Line_2
 
 acs0    udata_acs   ; named variables in access ram
 LCD_cnt_l   res 1   ; reserve 1 byte for variable LCD_cnt_l
 LCD_cnt_h   res 1   ; reserve 1 byte for variable LCD_cnt_h
 LCD_cnt_ms  res 1   ; reserve 1 byte for ms counter
 LCD_tmp	    res 1   ; reserve 1 byte for temporary use
-LCD_counter res 1   ; reserve 1 byte for counting through nessage
+LCD_counter res 1   ; reserve 1 byte for counting through message
+LCD_cursor_counter  res 1   ; reserve 1 byte for counting cursor shifts
 
 	constant    LCD_E=5	; LCD enable bit
     	constant    LCD_RS=4	; LCD register select bit
@@ -133,6 +134,39 @@ lcdlp1	decf 	LCD_cnt_l,F	; no carry when 0x00 -> 0xff
 	return			; carry reset so return
 
 
+	
+LCD_Clear
+	movlw	b'00000001'	; display clear
+	call	LCD_Send_Byte_I
+	movlw	.2		; wait 2ms
+	call	LCD_delay_ms
+	return
+	
+LCD_Cursor_To_Line_2
+	movlw	0x40
+	call	LCD_Set_DDRAM_Address
+	return
+	
+	
+LCD_Cursor_To_Start
+	movlw	b'00000010'	; Return Home
+	call	LCD_Send_Byte_I
+	movlw	.10		; wait 40us
+	call	LCD_delay_x4us	
+	return
+	
+;LCD_Cursor_Shift_Right
+;	movlw	b'00010100'	; Shift cursor to right, Address counter += 1
+;	call	LCD_Send_Byte_I
+;	movlw	.10		; wait 40us
+;	call	LCD_delay_x4us	
+	
+LCD_Set_DDRAM_Address		; 7-bit DDRAM address in W
+	iorlw	b'10000000'
+	call	LCD_Send_Byte_I
+	movlw	.10		; wait 40us
+	call	LCD_delay_x4us	
+	return
     end
 
 
