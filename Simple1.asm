@@ -39,6 +39,17 @@ start 	nop
 	call	KP_Decode_Table
 	call	Write_Char_To_LCD
 
+	movlw	myTable_l	; output message to UART
+	lfsr	FSR2, myArray
+	call	UART_Transmit_Message
+	
+measure_loop
+	call	ADC_Read
+	movf	ADRESH,W
+	call	LCD_Write_Hex
+	movf	ADRESL,W
+	call	LCD_Write_Hex
+	goto	measure_loop		; goto current line in code
 ;	call	Echo_E_To_D
 ;	call	KP_Decode
 ;	call	Write_Char_To_LCD
