@@ -1,6 +1,6 @@
 #include p18f87k22.inc
 
-    global  LCD_Setup, LCD_Write_Message, LCD_Clear, LCD_Cursor_To_Start, LCD_Cursor_To_Line_2, LCD_Write_Hex
+    global  LCD_Setup, LCD_Write_Message, LCD_Clear, LCD_Cursor_To_Start, LCD_Cursor_To_Line_2, LCD_Write_Hex, LCD_Write_Hex_Message_2B
 
 acs0    udata_acs   ; named variables in access ram
 LCD_cnt_l   res 1   ; reserve 1 byte for variable LCD_cnt_l
@@ -50,6 +50,14 @@ LCD_Setup
 	call	LCD_delay_x4us
 	return
 
+LCD_Write_Hex_Message_2B	; Message stored at FSR2
+	movlw	.1	    ; length of message in bytes - 1. move to W
+	movf	PLUSW2, W
+	call	LCD_Write_Hex
+	movf	POSTDEC2, W
+	call	LCD_Write_Hex
+	return
+	
 LCD_Write_Hex	    ; Writes byte stored in W as hex
 	movwf	LCD_hex_tmp
 	swapf	LCD_hex_tmp,W	; high nibble first
