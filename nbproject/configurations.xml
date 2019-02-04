@@ -19,6 +19,7 @@
       <itemPath>ADC.asm</itemPath>
       <itemPath>Keypad.asm</itemPath>
       <itemPath>Maths.asm</itemPath>
+      <itemPath>DAC.asm</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

@@ -1,4 +1,4 @@
-	#include p18f87k22.inc
+#include p18f87k22.inc
 
 	extern	UART_Setup, UART_Transmit_Message  ; external UART subroutines
 	extern  LCD_Setup, LCD_Write_Message, LCD_Clear, LCD_Cursor_To_Start, LCD_Cursor_To_Line_2, LCD_Write_Hex_Message_2B
@@ -6,6 +6,7 @@
 	extern	LCD_Write_Hex			    ; external LCD subroutines
 	extern  ADC_Setup, ADC_Read		    ; external ADC routines
 	extern	Mul_8_16, Mul_16_16, Mul_8_24
+	extern	DAC_Setup
 
 acs0	udata_acs   ; reserve data space in access ram
 	
@@ -47,20 +48,22 @@ pdata	code    ; a section of programme memory for storing data
 main	code
 	; ******* Programme FLASH read Setup Code ***********************
 setup	
-	bcf	EECON1, CFGS	; point to Flash program memory  
-	bsf	EECON1, EEPGD 	; access Flash program memory
-	call	UART_Setup	; setup UART
-	call	LCD_Setup	; setup LCD
-	call	KP_Setup	; setup Keypad
-	call	ADC_Setup
+;	bcf	EECON1, CFGS	; point to Flash program memory  
+;	bsf	EECON1, EEPGD 	; access Flash program memory
+;	call	UART_Setup	; setup UART
+;	call	LCD_Setup	; setup LCD
+;	call	KP_Setup	; setup Keypad
+;	call	ADC_Setup
+	call	DAC_Setup
 ;	
-	clrf	TRISD		; PORT D all outputs
-	clrf	LATD
+;	clrf	TRISD		; PORT D all outputs
+;	clrf	LATD
 	goto	start
 	
 	; ******* Main programme ****************************************
-start 	call	Write_ADC_to_LCD
-	bra	start
+start 	goto	$
+;	call	Write_ADC_to_LCD
+;	bra	start
 	
 ;measure_loop
 ;	call	ADC_Read
