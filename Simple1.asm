@@ -7,6 +7,8 @@
 	extern  ADC_Setup, ADC_Read		    ; external ADC routines
 	extern	Mul_8_16, Mul_16_16, Mul_8_24
 	extern	DAC_Setup
+	
+	extern	MainSetup, MainLoop
 
 acs0	udata_acs   ; reserve data space in access ram
 	
@@ -54,14 +56,16 @@ setup
 ;	call	LCD_Setup	; setup LCD
 ;	call	KP_Setup	; setup Keypad
 ;	call	ADC_Setup
-	call	DAC_Setup
-;	
+;	call	DAC_Setup
+	call	MainSetup
 ;	clrf	TRISD		; PORT D all outputs
 ;	clrf	LATD
 	goto	start
 	
 	; ******* Main programme ****************************************
-start 	goto	$
+start 	call	MainLoop
+	
+	goto	$
 ;	call	Write_ADC_to_LCD
 ;	bra	start
 	
