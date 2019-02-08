@@ -15,7 +15,7 @@ ball_vy res	2
  
     constant	ball_radius = 0x10	    ; .25
     constant	wall_x_lower = 0x50	    ; .0
-    constant	wall_x_higher = 0x100	    ; .100
+    constant	wall_x_higher = 0xf00	    ; .100
     constant	wall_y_lower = 0x00	    ; .0
     constant	wall_y_higher = 0x200	    ; DOES NOT EXIST
     

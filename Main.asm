@@ -8,6 +8,7 @@
 	extern  LCD_Setup, LCD_Write_Message, LCD_Clear, LCD_Cursor_To_Start, LCD_Cursor_To_Line_2, LCD_Write_Hex_Message_2B
 	extern	LCD_delay_ms
 	extern	UART_Setup, UART_Transmit_Message
+	extern	SPI_DAC_Setup, SPI_Transmit_12b
     
 Main code
  
@@ -15,11 +16,16 @@ Main code
 MainSetup
 ; 	call	UART_Setup	; setup UART
 	call	LCD_Setup
+	call	SPI_DAC_Setup
  
  	; Setup ball pos and vel
-	movlw	0xff
-	movwf	ball_vx		
-	movwf	ball_vx + 1	; ball_vx = -1
+;	movlw	0xff
+;	movwf	ball_vx		
+;	movwf	ball_vx + 1	; ball_vx = -1
+	movlw	0x10
+	movwf	ball_vx	
+	movlw	0x00
+	movwf	ball_vx + 1	; ball_vx = 0x10
 	movlw	0x00
 	movwf	ball_vy + 1
 	movlw	0x05
@@ -43,6 +49,7 @@ MainLoop
 	call	LCD_Clear
 
 	lfsr	FSR2, ball_x
+	call	SPI_Transmit_12b
 	call	LCD_Write_Hex_Message_2B
 	call	LCD_Cursor_To_Line_2
 	lfsr	FSR2, ball_y

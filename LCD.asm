@@ -1,6 +1,8 @@
 #include p18f87k22.inc
 
-    global  LCD_Setup, LCD_Write_Message, LCD_Clear, LCD_Cursor_To_Start, LCD_Cursor_To_Line_2, LCD_Write_Hex, LCD_Write_Hex_Message_2B, LCD_delay_ms
+    global  LCD_Setup, LCD_Write_Message, LCD_Write_Hex, LCD_Write_Hex_Message_2B
+    global  LCD_Clear, LCD_Cursor_To_Start, LCD_Cursor_To_Line_2
+    global  LCD_delay_ms, LCD_delay_x4us
     
 
 acs0    udata_acs   ; named variables in access ram
