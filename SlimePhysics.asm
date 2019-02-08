@@ -1,38 +1,39 @@
 #include p18f87k22.inc
 
-	global	ball_x, ball_y, ball_vx, ball_vy
-	global	Ball_Step
+	global	slime_0_x, slime_0_y, slime_0_vx, slime_0_vy
+	global	slime_1_x, slime_1_y, slime_1_vx, slime_1_vy
+
+	global	Slime_Step
 
 	extern	Mul_16_16
     
     
 acs0    udata_acs
-ball_x  res	2	; -32768 to 32767 in 2's complement
-ball_y  res	2
-ball_vx res	2	; -32768 to 32767 in 2's complement
-ball_vy res	2
+slime_0_x  res	2	; -32768 to 32767 in 2's complement
+slime_0_y  res	2
+slime_0_vx res	2	; -32768 to 32767 in 2's complement
+slime_0_vy res	2
+slime_1_x  res	2
+slime_1_y  res	2
+slime_1_vx res	2
+slime_1_vy res	2
  
  
-    constant	ball_radius = 0x10	    ; .25
-    constant	wall_x_lower = 0x50	    ; .0
-    constant	wall_x_higher = 0x100	    ; .100
-    constant	wall_y_lower = 0x00	    ; .0
-    constant	wall_y_higher = 0x200	    ; DOES NOT EXIST
+    constant	slime_radius = 0x10	    ; .25
     
-    constant	ball_wall_x_lower = wall_x_lower + ball_radius
-    constant	ball_wall_x_higher = wall_x_higher - ball_radius
-    constant	ball_wall_y_lower = wall_y_lower + ball_radius
-    constant	ball_wall_y_higher = wall_y_higher - ball_radius
-    
-    
-BallPhysics code
+SlimePhysics code
 	    
  
-Ball_Step
+Slime_Step
+	call	Update_Velocity
 	call	Propagate
 	call	Collide_With_Wall
 	return
 
+Update_Velocity
+	
+	return
+	
 ; Propagate current positions by 1 frame (x = x + vt)
 Propagate
 	; x = x + v, t = 1
@@ -46,7 +47,6 @@ Propagate
 	movf	ball_vy + 1, W
 	addwfc	ball_y + 1, f
 	
-	; TODO: Look into ensuring no overflows happened
 	return
 	    
 ; Update ball velocity based on position
@@ -171,3 +171,5 @@ Reverse_ball_vy
 	return
 	
 	end
+
+

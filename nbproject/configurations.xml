@@ -23,6 +23,8 @@
       <itemPath>OscilloscopePlot.asm</itemPath>
       <itemPath>BallPhysics.asm</itemPath>
       <itemPath>Main.asm</itemPath>
+      <itemPath>SlimePhysics.asm</itemPath>
+      <itemPath>SPI_DAC.asm</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

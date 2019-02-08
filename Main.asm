@@ -18,26 +18,36 @@ MainSetup
  
  	; Setup ball pos and vel
 	movlw	0xff
-	movwf	ball_vx
-	movwf	ball_vx + 1
-	movwf	ball_vy
+	movwf	ball_vx		
+	movwf	ball_vx + 1	; ball_vx = -1
+	movlw	0x00
+	movwf	ball_vy + 1
+	movlw	0x05
+	movwf	ball_vy	    	; ball_vy = 5
 	movlw	0xC8
 	movwf	ball_x
+
+	
+	movlw	0xA8
+	movwf	ball_y
+	
 	movlw	0x00
 	movwf	ball_x + 1
-	
-	movwf	ball_y
+	movwf	ball_y + 1
 	return
  
  
 MainLoop
 	call	Ball_Step
 	
-	lfsr	FSR2, ball_x
-	movlw	.2
-;	call	UART_Transmit_Message
 	call	LCD_Clear
+
+	lfsr	FSR2, ball_x
 	call	LCD_Write_Hex_Message_2B
+	call	LCD_Cursor_To_Line_2
+	lfsr	FSR2, ball_y
+	call	LCD_Write_Hex_Message_2B
+	
 	movlw	.50
 	call	LCD_delay_ms
 	bra	MainLoop
