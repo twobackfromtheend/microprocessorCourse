@@ -1,10 +1,14 @@
 #include p18f87k22.inc
 
     global  Mul_8_16, Mul_16_16, Mul_8_24
+    global  Compare_2B, compare_2B_1, compare_2B_2
 
 acs0    udata_acs   ; named variables in access ram
 result_24	res 3
 result_32	res 4
+
+compare_2B_1	res 2
+compare_2B_2	res 2
 
 acs_ovr	access_ovr
 ; For Mul_8_16
@@ -108,5 +112,42 @@ Mul_8_24
 	
 	lfsr	FSR2, result_32
 	return
+	
+; If compare_2B_1 > compare_2B_2: return with 1 in W
+; Numbers are compared as unsigned ints.
+Compare_2B 
+	;   compare_2B_1 + 1 > HIGHER(compare_2B_2) call FUNCTION OR
+	;   compare_2B_1 + 1 = HIGHER(compare_2B_2) AND compare_2B_1 > LOWER(compare_2B_2), call FUNCTION
+	movf	compare_2B_2 + 1, W	    ; cpfsgt - skip if f > W
+	cpfsgt	compare_2B_1 + 1	    ; skip if compare_2B_1 + 1 > compare_2B_2 + 1
+	bra	_check_VAR1_condition_2
+	retlw	1
+_check_VAR1_condition_2
+	movf	compare_2B_2 + 1, W
+	cpfseq	compare_2B_1 + 1	    ; skip if compare_2B_1 + 1 = compare_2B_2 + 1
+	retlw	0
+	movlw	compare_2B_2
+	cpfsgt	compare_2B_1		    ; skip if compare_2B_1 > compare_2B_2
+	retlw	0
+	retlw	1
+
+;; If VAR1 > CONST2: call FUNCTION
+;Compare_2B 
+;	;   VAR1 + 1 > HIGHER(CONST2) call FUNCTION OR
+;	;   VAR1 + 1 = HIGHER(CONST2) AND VAR1 > LOWER(CONST2), call FUNCTION
+;	movlw	high(CONST2)	    ; cpfsgt - skip if f > W
+;	cpfsgt	VAR1 + 1	    ; skip if VAR1 + 1 > higher(CONST2)
+;	bra	_check_VAR1_condition_2
+;	call	FUNCTION
+;	bra	_check_VAR1_end
+;_check_VAR1_condition_2
+;	movlw	high(CONST2)
+;	cpfseq	VAR1 + 1	    ; skip if VAR1 + 1 = higher(CONST2)
+;	bra	_check_VAR1_end
+;	movlw	low(CONST2)
+;	cpfsgt	VAR1		    ; skip if VAR1 > lower(CONST2)
+;	bra	_check_VAR1_end
+;	call	FUNCTION
+;_check_VAR1_end
 	
     end

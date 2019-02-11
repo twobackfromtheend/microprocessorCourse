@@ -1,6 +1,8 @@
 #include p18f87k22.inc
+#include constants.inc
 
 	global	ball_x, ball_y, ball_vx, ball_vy
+;	global	wall_x_lower, wall_x_higher, wall_y_lower, wall_y_higher
 	global	Ball_Step
 
 	extern	Mul_16_16
@@ -13,11 +15,6 @@ ball_vx res	2	; -32768 to 32767 in 2's complement
 ball_vy res	2
  
  
-    constant	ball_radius = 0x10	    ; .25
-    constant	wall_x_lower = 0x50	    ; .0
-    constant	wall_x_higher = 0xf00	    ; .100
-    constant	wall_y_lower = 0x00	    ; .0
-    constant	wall_y_higher = 0x200	    ; DOES NOT EXIST
     
     constant	ball_wall_x_lower = wall_x_lower + ball_radius
     constant	ball_wall_x_higher = wall_x_higher - ball_radius

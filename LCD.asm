@@ -57,7 +57,7 @@ LCD_Write_Hex_Message_2B	; Message stored at FSR2
 	movlw	.1	    ; length of message in bytes - 1. move to W
 	movf	PLUSW2, W
 	call	LCD_Write_Hex
-	movf	POSTDEC2, W
+	movf	INDF2, W
 	call	LCD_Write_Hex
 	return
 	
