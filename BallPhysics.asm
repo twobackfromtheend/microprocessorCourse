@@ -6,20 +6,30 @@
 	global	Ball_Step
 
 	extern	Mul_16_16
-    
+    	extern	slime_0_x, slime_0_y, slime_0_vx, slime_0_vy
+	extern	slime_1_x, slime_1_y, slime_1_vx, slime_1_vy
+	extern  Compare_2B, compare_2B_1, compare_2B_2
+	extern	Absolute_2B
     
 acs0    udata_acs
 ball_x  res	2	; -32768 to 32767 in 2's complement
 ball_y  res	2
 ball_vx res	2	; -32768 to 32767 in 2's complement
 ball_vy res	2
- 
+
+acs_ovr	access_ovr
+do_collision   res	1
+distance_x  res	2
+distance_y  res	2
+
  
     
     constant	ball_wall_x_lower = wall_x_lower + ball_radius
     constant	ball_wall_x_higher = wall_x_higher - ball_radius
     constant	ball_wall_y_lower = wall_y_lower + ball_radius
     constant	ball_wall_y_higher = wall_y_higher - ball_radius
+    
+    constant	ball_slime_collision_distance = ball_radius + slime_radius
     
     
 BallPhysics code
@@ -166,5 +176,58 @@ Reverse_ball_vy
 	movlw	0
 	addwfc	ball_vy + 1
 	return
+	
+	
+Collide_ball_slime
+	; Check if collision needed
+	movlw	0
+	movwf	do_collision
+	
+	; Calculate distance^2
+	; distance = ball_x - slime_x
+	; x
+	movf	slime_0_x, W
+	movff	ball_x, distance_x
+	movff	ball_x + 1, distance_x + 1
+	subwf	distance_x		; lower byte subtraction
+	movf	slime_0_x + 1, W
+	subwfb	distance_x + 1		; high byte subtraction w/ borrow
+
+	; y
+	movf	slime_0_y, W
+	movff	ball_y, distance_y
+	movff	ball_y + 1, distance_y + 1
+	subwf	distance_y		; lower byte subtraction
+	movf	slime_0_y + 1, W
+	subwfb	distance_y + 1		; high byte subtraction w/ borrow
+	
+	
+	; if abs_distance_x > ball_slime_collision_distance:
+	movff	distance_x, compare_2B_1
+	movff	distance_x + 1, compare_2B_1 + 1
+	lfsr	FSR0, compare_2B_1
+	call	Absolute_2B		; Turn compare_2B_1 into abs_distance_x
+	; turn compare_2B_1 into a positive number
+	movlw	low(ball_slime_collision_distance)
+	movwf	compare_2B_2
+	movlw	high(ball_slime_collision_distance)
+	movwf	compare_2B_2 + 1	; 1: distance_x, 2: collision_distance
+	call	Compare_2B		; W = 1 > 2
+	tstfsz	WREG			; Skip if collision possible, collision_distance (2) > (1) distance_x
+	bra	no_collision
+	; if abs_distance_y > ball_slime_collision_distance:
+	movff	distance_y, compare_2B_1
+	movff	distance_y + 1, compare_2B_1 + 1
+	lfsr	FSR0, compare_2B_1
+	call	Absolute_2B		; Turn compare_2B_1 into abs_distance_y
+	movlw	low(ball_slime_collision_distance)
+	movwf	compare_2B_2
+	movlw	high(ball_slime_collision_distance)
+	movwf	compare_2B_2 + 1	; 1: distance_y, 2: collision_distance
+	call	Compare_2B		; W = 1 > 2
+	tstfsz	WREG			; Skip if collision possible, collision_distance (2) > (1) distance_y
+	bra	no_collision
+	
+no_collision
 	
 	end

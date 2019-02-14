@@ -1,4 +1,5 @@
 #include p18f87k22.inc
+#include constants.inc
 
 	global	slime_0_x, slime_0_y, slime_0_vx, slime_0_vy
 	global	slime_1_x, slime_1_y, slime_1_vx, slime_1_vy
@@ -19,7 +20,6 @@ slime_1_vx res	2
 slime_1_vy res	2
  
  
-    constant	slime_radius = 0x10	    ; .25
     
 SlimePhysics code
 	    

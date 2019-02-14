@@ -21,7 +21,6 @@
       <itemPath>Keypad.asm</itemPath>
       <itemPath>Maths.asm</itemPath>
       <itemPath>DAC.asm</itemPath>
-      <itemPath>OscilloscopePlot.asm</itemPath>
       <itemPath>BallPhysics.asm</itemPath>
       <itemPath>Main.asm</itemPath>
       <itemPath>SlimePhysics.asm</itemPath>

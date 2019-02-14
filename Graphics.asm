@@ -2,13 +2,12 @@
 #include constants.inc
 	
 	global	Graphics_Setup
-	global	Graphics_wall, Graphics_ball
+	global	Graphics_wall, Graphics_ball, Graphics_slimes
 	
 	extern	ball_x, ball_y
+	extern	slime_0_x, slime_0_y, slime_1_x, slime_1_y
 	extern	SPI_Transmit_W
 	extern	LCD_delay_x4us
-	extern  LCD_Setup, LCD_Write_Message, LCD_Clear, LCD_Cursor_To_Start, LCD_Cursor_To_Line_2, LCD_Write_Hex_Message_2B
-	extern	LCD_delay_ms
 
 ;	extern	wall_x_lower, wall_x_higher, wall_y_lower, wall_y_higher
 	extern  Compare_2B, compare_2B_1, compare_2B_2
@@ -17,6 +16,7 @@ acs0    udata_acs
 temp_x  res	2
 temp_y	res	2
 ball_points_ram	res .14
+;slime_points_ram    res	.14
 counter		res 1
 
 
@@ -26,10 +26,12 @@ Graphics code
 
 ;ball_points  data    .0,.4,.1,.4,.2,.3,.3,.3,.3,.2,.4,.1,.4,.0
 ;ball_points  data    .0,.40,.10,.40,.20,.30,.30,.30,.30,.20,.40,.10,.40,.00
-ball_points  db    .0,.200,.50,.200,.100,.150,.150,.150,.150,.100,.200,.50,.200,.00
-
-	constant    ball_points_count=.7	; x2 for number of ints.
-	
+;ball_points	db	    .0,.200,.50,.200,.100,.150,.150,.150,.150,.100,.200,.50,.200,.00
+ball_points	db	    .0,.100,.25,.100,.50,.75,.75,.75,.75,.50,.100,.25,.100,.00
+		constant    ball_points_count=.7	; x2 for number of ints.
+;slime_points	dw	    .00,.400,.100,.400,.200,.300,.300,.300,.300,.200,.400,.100,.400,.00
+;		constant    slime_points_count=.7
+		constant    slime_ball_radius_multiplier=.4
 Graphics_Setup
 	; Load ball_points_ram from program memory
 	lfsr	FSR0, ball_points_ram	; Load FSR0 with address in RAM	
@@ -49,6 +51,25 @@ copy_ball_points_loop
 	movff	TABLAT, POSTINC0
 	decfsz	counter
 	bra	copy_ball_points_loop
+	
+;	; Load slime_points_ram from program memory
+;	lfsr	FSR0, slime_points_ram	; Load FSR0 with address in RAM	
+;	movlw	upper(slime_points)
+;	movwf	TBLPTRU	
+;	movlw	high(slime_points)
+;	movwf	TBLPTRH	
+;	movlw	low(slime_points)
+;	movwf	TBLPTRL
+;
+;	movlw	slime_points_count
+;	movwf 	counter			; counter initialised to ball_points_count
+;copy_slime_points_loop
+;	tblrd*+			; one byte from PM to TABLAT, increment TBLPTR
+;	movff	TABLAT, POSTINC0
+;	tblrd*+			; one byte from PM to TABLAT, increment TBLPTR
+;	movff	TABLAT, POSTINC0
+;	decfsz	counter
+;	bra	copy_slime_points_loop
 	return
 
 ; Draws wall
@@ -234,6 +255,8 @@ draw_ball_nxpy
 	
 	return
 	
+; Draws the ball as a point.
+; Used for testing.
 Graphics_ball_point	
 	; Write ball_x to chip 1: CS (pin 1) low
 	bcf	LATD, 1		; CS1 low - allow write
@@ -263,17 +286,60 @@ Graphics_ball_point
 	bsf	LATD, 0		
 	return
 	
+Graphics_slimes
+	; Draw +ve quadrant
+	lfsr	FSR0, ball_points_ram
+	movlw	ball_points_count
+	movwf 	counter	
+draw_slime_pxpy
+	movff	slime_0_x, temp_x
+	movff	slime_0_x + 1, temp_x + 1
+	movff	slime_0_y, temp_y
+	movff	slime_0_y + 1, temp_y + 1
 
+	movf	POSTINC0, W	    ; x-offset
+	mullw	.4		    ; PRODH:PRODL
+	movf	PRODL, W
+	addwf	temp_x
+	movf	PRODH, W
+	addwfc	temp_x + 1
+	movf	POSTINC0, W	    ; y-offset
+	mullw	.4		    ; PRODH:PRODL
+	movf	PRODL, W
+	addwf	temp_y
+	movf	PRODH, W
+	addwfc	temp_y + 1
+	call	Graphics_Plot_temp_xy
+	decfsz	counter
+	bra	draw_slime_pxpy
+	
+;	; Draw -x quadrant
+	lfsr	FSR0, ball_points_ram
+	movlw	ball_points_count
+	movwf 	counter	
+draw_slime_nxpy
+	movff	slime_0_x, temp_x
+	movff	slime_0_x + 1, temp_x + 1
+	movff	slime_0_y, temp_y
+	movff	slime_0_y + 1, temp_y + 1
+	movf	POSTINC0, W	    ; x-offset
+	mullw	.4		    ; PRODH:PRODL
+	movf	PRODL, W
+	subwf	temp_x
+	movf	PRODH, W
+	subwfb	temp_x + 1
+	movf	POSTINC0, W	    ; y-offset
+	mullw	.4		    ; PRODH:PRODL
+	movf	PRODL, W
+	addwf	temp_y
+	movf	PRODH, W
+	addwfc	temp_y + 1
+	call	Graphics_Plot_temp_xy
+	decfsz	counter
+	bra	draw_slime_nxpy
+	return
+	
 Graphics_Plot_temp_xy	
-;	call	LCD_Clear
-;	lfsr	FSR2, temp_x
-;	call	LCD_Write_Hex_Message_2B
-;	call	LCD_Cursor_To_Line_2
-;	lfsr	FSR2, temp_y
-;	call	LCD_Write_Hex_Message_2B
-;	movlw	.50
-;	call	LCD_delay_ms
-
 	; Write temp_x to chip 1: CS (pin 1) low
 	bcf	LATD, 1		; CS1 low - allow write
 	movf	temp_x + 1, W	; move upper byte to W

@@ -2,6 +2,7 @@
 
     global  Mul_8_16, Mul_16_16, Mul_8_24
     global  Compare_2B, compare_2B_1, compare_2B_2
+    global  Absolute_2B
 
 acs0    udata_acs   ; named variables in access ram
 result_24	res 3
@@ -149,5 +150,17 @@ _check_VAR1_condition_2
 ;	bra	_check_VAR1_end
 ;	call	FUNCTION
 ;_check_VAR1_end
+	
+; Turns a 2s complement number in FSR0 to its absolute_value
+Absolute_2B
+	movlw	1
+	btfss	PLUSW0, 7	    ; Skip if bit is set (is negative).
+	return
+	comf	PLUSW0, f	    ; Complement
+	comf	INDF0, f
+;	movlw	1
+	addwf	INDF0, f	    ; Add 1
+	addwfc	PLUSW0, f
+	return
 	
     end
