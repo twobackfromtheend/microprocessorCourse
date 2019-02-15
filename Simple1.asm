@@ -36,6 +36,7 @@ setup
 ;	call	KP_Setup	; setup Keypad
 ;	call	ADC_Setup
 ;	call	DAC_Setup
+	
 	call	MainSetup
 	goto	start
 	

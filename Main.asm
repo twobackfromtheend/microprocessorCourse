@@ -47,8 +47,31 @@ MainSetup
 	movwf	ball_x + 1
 	movwf	ball_y + 1
 	
+	; Ball dropping down
+	movlw	0xD0
+	movwf	ball_x
+	movlw	0x07
+	movwf	ball_x + 1
+	
+	movlw	0x60
+	movwf	ball_y
+	movlw	0x02
+	movwf	ball_y + 1
+	
+	movlw	0
+	movwf	ball_vx
+	movwf	ball_vx + 1
+	movlw	0xd0
+	movwf	ball_vy
+	movlw	0xff
+	movwf	ball_vy + 1
+	
 	; Slime to bottom centre.
 	movlw	0x00
+	movwf	slime_0_vx
+	movwf	slime_0_vx + 1
+	movwf	slime_0_vy
+	movwf	slime_0_vy + 1
 	movwf	slime_0_y
 	movwf	slime_0_y + 1
 	movlw	0xD0

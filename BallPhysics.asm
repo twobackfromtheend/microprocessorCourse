@@ -10,6 +10,8 @@
 	extern	slime_1_x, slime_1_y, slime_1_vx, slime_1_vy
 	extern  Compare_2B, compare_2B_1, compare_2B_2
 	extern	Absolute_2B
+	extern	Divide_8_2B, Multiply_2_2B
+
     
 acs0    udata_acs
 ball_x  res	2	; -32768 to 32767 in 2's complement
@@ -17,13 +19,23 @@ ball_y  res	2
 ball_vx res	2	; -32768 to 32767 in 2's complement
 ball_vy res	2
 
-acs_ovr	access_ovr
-do_collision   res	1
 distance_x  res	2
 distance_y  res	2
+  
+temp_2B_x	    res	2
+temp_2B_y	    res	2
+temp_2B_k	    res	2
+	    
+;acs_ovr	access_ovr
 
+; distance_xORy/ball_slime_collision_distance always <= 1
+;norm_dist_x res	1	; 8 * distance_x / ball_slime_collision_distance
+;norm_dist_y res	1   	; 8 * distance_y / ball_slime_collision_distance
+; (  8 / ball_slime_collision_distance (constant) ) * distance_xORy
+; BASICALLY
+; distance_xORy / 64 = number from -8 to 8. (probably <=8 due to rounding)
  
-    
+
     constant	ball_wall_x_lower = wall_x_lower + ball_radius
     constant	ball_wall_x_higher = wall_x_higher - ball_radius
     constant	ball_wall_y_lower = wall_y_lower + ball_radius
@@ -38,6 +50,7 @@ BallPhysics code
 Ball_Step
 	call	Propagate
 	call	Collide_With_Wall
+	call	Collide_ball_slime
 	return
 
 ; Propagate current positions by 1 frame (x = x + vt)
@@ -180,10 +193,8 @@ Reverse_ball_vy
 	
 Collide_ball_slime
 	; Check if collision needed
-	movlw	0
-	movwf	do_collision
 	
-	; Calculate distance^2
+	; Calculate distance
 	; distance = ball_x - slime_x
 	; x
 	movf	slime_0_x, W
@@ -207,14 +218,14 @@ Collide_ball_slime
 	movff	distance_x + 1, compare_2B_1 + 1
 	lfsr	FSR0, compare_2B_1
 	call	Absolute_2B		; Turn compare_2B_1 into abs_distance_x
-	; turn compare_2B_1 into a positive number
 	movlw	low(ball_slime_collision_distance)
 	movwf	compare_2B_2
 	movlw	high(ball_slime_collision_distance)
 	movwf	compare_2B_2 + 1	; 1: distance_x, 2: collision_distance
 	call	Compare_2B		; W = 1 > 2
 	tstfsz	WREG			; Skip if collision possible, collision_distance (2) > (1) distance_x
-	bra	no_collision
+	return
+	
 	; if abs_distance_y > ball_slime_collision_distance:
 	movff	distance_y, compare_2B_1
 	movff	distance_y + 1, compare_2B_1 + 1
@@ -226,8 +237,95 @@ Collide_ball_slime
 	movwf	compare_2B_2 + 1	; 1: distance_y, 2: collision_distance
 	call	Compare_2B		; W = 1 > 2
 	tstfsz	WREG			; Skip if collision possible, collision_distance (2) > (1) distance_y
-	bra	no_collision
+	return
 	
-no_collision
+	; Calculate norm_dists
+	; distance_xORy = distance_xORy / 64  (represents 8x number)
+	lfsr	FSR0, distance_x
+	call	Divide_8_2B
+	call	Divide_8_2B
+	lfsr	FSR0, distance_y
+	call	Divide_8_2B
+	call	Divide_8_2B
+	
+	; ball_vx = ball_vx + (	(slime_0_vx - 2 * ball_vx) distance_x + 
+	;			(slime_0_vy - 2 * ball_vy) distance_y	)    * distance_x
+	
+	movff	ball_vx, temp_2B_x
+	movff	ball_vx + 1, temp_2B_x + 1
+	lfsr	FSR0, temp_2B_x
+	call	Multiply_2_2B		; temp_2B_x = 2 * ball_vx
+	
+	movf	temp_2B_x, W
+	subwf	slime_0_vx, W
+	movwf	temp_2B_x
+	movf	temp_2B_x + 1, W
+	subwfb	slime_0_vx + 1, W
+	movwf	temp_2B_x + 1		; temp_2B_x = slime_0_vx - 2 * ball_vx
+	
+
+	; temp_2B_x /= 8 *= distance_x    Divide by 8 to counter distance_xORy scaling.
+	lfsr	FSR0, temp_2B_x
+	call	Divide_8_2B
+	
+	lfsr	FSR1, distance_x
+	call	Mul_16_16
+	movff	POSTINC2, temp_2B_x
+	movff	INDF2, temp_2B_x + 1	; temp_2B_x = (slime_0_vx - 2 * ball_vx) distance_x
+	
+	; Repeat for y
+	movff	ball_vy, temp_2B_y
+	movff	ball_vy + 1, temp_2B_y + 1
+	lfsr	FSR0, temp_2B_y
+	call	Multiply_2_2B		; temp_2B_y = 2 * ball_vy
+	movf	temp_2B_y, W
+	subwf	slime_0_vy, W
+	movwf	temp_2B_y
+	movf	temp_2B_y + 1, W
+	subwfb	slime_0_vy + 1, W
+	movwf	temp_2B_y + 1		; temp_2B_y = slime_0_vy - 2 * ball_vy
+	
+	; temp_2B_y /= 8 *= distance_y    Divide by 8 to counter distance_xORy scaling.
+	lfsr	FSR0, temp_2B_y
+	call	Divide_8_2B
+	lfsr	FSR1, distance_y
+	call	Mul_16_16
+	movff	POSTINC2, temp_2B_y
+	movff	INDF2, temp_2B_y + 1	; temp_2B_y = (slime_0_vy - 2 * ball_vy) distance_y
+
+	; temp_2B_k = (temp_2B_x + temp_2B_y) / 8      /8 to counter scaling of distance_xORy
+	movff	temp_2B_x, temp_2B_k
+	movff	temp_2B_x + 1, temp_2B_k + 1
+	movf	temp_2B_y, W
+	addwf	temp_2B_k, f
+	movf	temp_2B_y + 1, W
+	addwfc	temp_2B_k + 1, f
+	lfsr	FSR0, temp_2B_k
+	call	Divide_8_2B
+	
+	; temp_2B_x = temp_2B_k * distance_x
+	lfsr	FSR1, distance_x
+	call	Mul_16_16
+	movff	POSTINC2, temp_2B_x
+	movff	INDF2, temp_2B_x + 1	    ; temp_2B_x = k dx
+	; temp_2B_y = temp_2B_k * distance_y
+	lfsr	FSR1, distance_y
+	call	Mul_16_16
+	movff	POSTINC2, temp_2B_y
+	movff	INDF2, temp_2B_y + 1	    ; temp_2B_y = k dy
+	
+	; Add temp_2B_xORy to ball_vx, ball_vy
+	movf	temp_2B_x, W
+	addwf	ball_vx, f
+	movf	temp_2B_x + 1, W
+	addwfc	ball_vx + 1, f
+	movf	temp_2B_y, W
+	addwf	ball_vy, f
+	movf	temp_2B_y + 1, W
+	addwfc	ball_vy + 1, f		    ; v = v + k dxORy
+	
+	return
+	
+	
 	
 	end

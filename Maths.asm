@@ -3,6 +3,7 @@
     global  Mul_8_16, Mul_16_16, Mul_8_24
     global  Compare_2B, compare_2B_1, compare_2B_2
     global  Absolute_2B
+    global  Divide_8_2B, Multiply_2_2B
 
 acs0    udata_acs   ; named variables in access ram
 result_24	res 3
@@ -15,6 +16,8 @@ acs_ovr	access_ovr
 ; For Mul_8_16
 _lower_prodl	res 1
 _lower_prodh	res 1
+	
+_rotate_temp	res 1
 
 Maths	code
     
@@ -127,7 +130,7 @@ _check_VAR1_condition_2
 	movf	compare_2B_2 + 1, W
 	cpfseq	compare_2B_1 + 1	    ; skip if compare_2B_1 + 1 = compare_2B_2 + 1
 	retlw	0
-	movlw	compare_2B_2
+	movf	compare_2B_2, W
 	cpfsgt	compare_2B_1		    ; skip if compare_2B_1 > compare_2B_2
 	retlw	0
 	retlw	1
@@ -163,4 +166,75 @@ Absolute_2B
 	addwfc	PLUSW0, f
 	return
 	
+; Divides a 2s complement number in FSR0 by 8, places back.
+Divide_8_2B
+	movlw	1
+	btfsc	PLUSW0, 7	    ; Skip if bit is clear (is positive).
+	bra	negative_division
+positive_division
+	bcf	STATUS, C	    ; Clear carry flag
+	rrcf	PLUSW0, f	    ; Rotate top byte, carry to lower byte
+	rrcf	INDF0, f	
+	bcf	STATUS, C	    ; Clear carry flag
+	rrcf	PLUSW0, f
+	rrcf	INDF0, f
+	
+	bcf	STATUS, C	    ; Clear carry flag
+	; Divide and round last bit
+	btfsc	INDF0, 0	    ; If last bit is clear, do not round
+	bra	round_pdiv
+no_round_pdiv
+	rrcf	PLUSW0, f
+	rrcf	INDF0, f
+	return
+round_pdiv
+	rrcf	PLUSW0, f
+	rrcf	INDF0, f
+	movlw	1
+	addwf	INDF0, f
+	movlw	0
+	addwfc	PLUSW0, f
+	return
+	
+negative_division
+	bsf	STATUS, C	    ; Set carry flag (pad left with 1s)
+	rrcf	PLUSW0, f
+	rrcf	INDF0, f	
+	bsf	STATUS, C	    ; Set carry flag (pad left with 1s)
+	rrcf	PLUSW0, f
+	rrcf	INDF0, f
+	
+	bsf	STATUS, C	    ; Set carry flag (pad left with 1s)
+	; Divide and round last bit
+	btfsc	INDF0, 0	    ; If last bit is clear, do not round
+	bra	round_ndiv
+no_round_ndiv
+	rrcf	PLUSW0, f
+	rrcf	INDF0, f
+	return
+round_ndiv
+	rrcf	PLUSW0, f
+	rrcf	INDF0, f
+	movlw	1
+	addwf	INDF0, f
+	movlw	0
+	addwfc	PLUSW0, f
+	return
+
+	
+; Multiply a 2s complement number in FSR0 by 2, places back.
+Multiply_2_2B
+	movlw	1
+	btfsc	PLUSW0, 7	    ; Skip if bit is clear (is positive).
+	bra	negative_multiply
+positive_multiply
+	bcf	STATUS, C	    ; Clear carry flag
+	rlcf	POSTINC0, f	    ; Rotate low byte, carry to high byte
+	rlcf	POSTDEC0, f	
+	return
+negative_multiply
+	bcf	STATUS, C	    ; Clear carry flag
+	rlcf	POSTINC0, f
+	rlcf	POSTDEC0, f	
+	return
     end
