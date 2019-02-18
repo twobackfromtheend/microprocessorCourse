@@ -6,9 +6,10 @@
 	extern	LCD_Write_Hex			    ; external LCD subroutines
 	extern  ADC_Setup, ADC_Read		    ; external ADC routines
 	extern	Mul_8_16, Mul_16_16, Mul_8_24
-	extern	DAC_Setup
 	
-	extern	MainSetup, MainLoop
+	extern	Main_Setup
+	extern	Game_Setup
+	extern	Timer_Setup
 
 acs0	udata_acs   ; reserve data space in access ram
 ;counter	    res 1   ; reserve one byte for a counter variable
@@ -37,11 +38,12 @@ setup
 ;	call	ADC_Setup
 ;	call	DAC_Setup
 	
-	call	MainSetup
+	call	Main_Setup
+	call	Game_Setup
 	goto	start
 	
 	; ******* Main programme ****************************************
-start 	call	MainLoop
+start 	call	Timer_Setup
 	goto	$
 	
 	

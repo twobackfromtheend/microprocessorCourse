@@ -286,12 +286,24 @@ Graphics_ball_point
 	bsf	LATD, 0		
 	return
 	
+	
+;;;;;	 DRAW SLIMES GRAPHICS	    ;;;;;
+;   Draws slimes using ball graphics	;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;	
 Graphics_slimes
+	call	Graphics_slime_0
+	call	Graphics_slime_1
+	return
+	
+;;;;;	DRAW SLIME 0 GRAPHICS	;;;;;
+;   Draws slime using ball graphics ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Graphics_slime_0
 	; Draw +ve quadrant
 	lfsr	FSR0, ball_points_ram
 	movlw	ball_points_count
 	movwf 	counter	
-draw_slime_pxpy
+draw_slime_0_pxpy
 	movff	slime_0_x, temp_x
 	movff	slime_0_x + 1, temp_x + 1
 	movff	slime_0_y, temp_y
@@ -311,13 +323,13 @@ draw_slime_pxpy
 	addwfc	temp_y + 1
 	call	Graphics_Plot_temp_xy
 	decfsz	counter
-	bra	draw_slime_pxpy
+	bra	draw_slime_0_pxpy
 	
 ;	; Draw -x quadrant
 	lfsr	FSR0, ball_points_ram
 	movlw	ball_points_count
 	movwf 	counter	
-draw_slime_nxpy
+draw_slime_0_nxpy
 	movff	slime_0_x, temp_x
 	movff	slime_0_x + 1, temp_x + 1
 	movff	slime_0_y, temp_y
@@ -336,7 +348,63 @@ draw_slime_nxpy
 	addwfc	temp_y + 1
 	call	Graphics_Plot_temp_xy
 	decfsz	counter
-	bra	draw_slime_nxpy
+	bra	draw_slime_0_nxpy
+	return
+	
+;;;;;	DRAW SLIME 1 GRAPHICS	;;;;;
+;   Draws slime using ball graphics ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Graphics_slime_1
+	; Draw +ve quadrant
+	lfsr	FSR0, ball_points_ram
+	movlw	ball_points_count
+	movwf 	counter	
+draw_slime_1_pxpy
+	movff	slime_1_x, temp_x
+	movff	slime_1_x + 1, temp_x + 1
+	movff	slime_1_y, temp_y
+	movff	slime_1_y + 1, temp_y + 1
+
+	movf	POSTINC0, W	    ; x-offset
+	mullw	.4		    ; PRODH:PRODL
+	movf	PRODL, W
+	addwf	temp_x
+	movf	PRODH, W
+	addwfc	temp_x + 1
+	movf	POSTINC0, W	    ; y-offset
+	mullw	.4		    ; PRODH:PRODL
+	movf	PRODL, W
+	addwf	temp_y
+	movf	PRODH, W
+	addwfc	temp_y + 1
+	call	Graphics_Plot_temp_xy
+	decfsz	counter
+	bra	draw_slime_1_pxpy
+	
+;	; Draw -x quadrant
+	lfsr	FSR0, ball_points_ram
+	movlw	ball_points_count
+	movwf 	counter	
+draw_slime_1_nxpy
+	movff	slime_1_x, temp_x
+	movff	slime_1_x + 1, temp_x + 1
+	movff	slime_1_y, temp_y
+	movff	slime_1_y + 1, temp_y + 1
+	movf	POSTINC0, W	    ; x-offset
+	mullw	.4		    ; PRODH:PRODL
+	movf	PRODL, W
+	subwf	temp_x
+	movf	PRODH, W
+	subwfb	temp_x + 1
+	movf	POSTINC0, W	    ; y-offset
+	mullw	.4		    ; PRODH:PRODL
+	movf	PRODL, W
+	addwf	temp_y
+	movf	PRODH, W
+	addwfc	temp_y + 1
+	call	Graphics_Plot_temp_xy
+	decfsz	counter
+	bra	draw_slime_1_nxpy
 	return
 	
 Graphics_Plot_temp_xy	

@@ -21,16 +21,15 @@ ball_y  res	2
 ball_vx res	2	; -32768 to 32767 in 2's complement
 ball_vy res	2
 
+ 
+bank1   udata	0x100
 distance_x  res	2
 distance_y  res	2
-  
 temp_2B_x	    res	2
 temp_2B_y	    res	2
 temp_2B_k	    res	2
-	    
 rel_vel_x   res	2
 rel_vel_y   res	2
-   
 _collision_check	    res 4
 _speed_limiter_sign		res 1
 _speed_limiter_positive_temp	res 2
@@ -56,22 +55,27 @@ BallPhysics code
 	    
  
 Ball_Step
-	call	Propagate
+	call	Ball_Propagate
 	call	Collide_With_Wall
-	call	Collide_ball_slime
+	call	Collide_ball_slime_0
+	call	Collide_ball_slime_1
+
 	call	Speed_Limiter
 	
-	call	LCD_Clear
-	lfsr	FSR2, ball_vx
-	call	LCD_Write_Hex_Message_2B
-	call	LCD_Cursor_To_Line_2
-	lfsr	FSR2, ball_vy
-	call	LCD_Write_Hex_Message_2B
+;	call	LCD_Clear
+;	lfsr	FSR2, ball_vx
+;	call	LCD_Write_Hex_Message_2B
+;	call	LCD_Cursor_To_Line_2
+;	lfsr	FSR2, ball_vy
+;	call	LCD_Write_Hex_Message_2B
 
 	return
 
-; Propagate current positions by 1 frame (x = x + vt)
-Propagate
+;;;;;;;;;;	    BALL PROPAGATE		   ;;;;;;;;;;
+;    Propagate current positions by 1 frame (x = x + vt)    ;
+;		    Applies gravity			    ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Ball_Propagate
 	; x = x + v, t = 1
 	movf	ball_vx, W
 	addwf	ball_x, f
@@ -84,8 +88,17 @@ Propagate
 	addwfc	ball_y + 1, f
 	
 	; TODO: Look into ensuring no overflows happened
+	
+	movlw	ball_gravity
+	subwf	ball_vy, f
+	movlw	0
+	subwfb	ball_vy + 1, f
 	return
 	    
+	
+;;;;;	COLLIDE BALL WALL	;;;;;
+;   Collides the ball with walls    ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; Update ball velocity based on position
 Collide_With_Wall
 	; LOWER X
@@ -184,50 +197,54 @@ _higher_y_end
 	nop
 	
 	return
-
+	
+;;;;;	REVERSE BALL VX	;;;;;
+;	 ball_vx *= -1	    ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Reverse_ball_vx
 	; 2s complement ball_vx
 	comf	ball_vx + 1, f
 	comf	ball_vx, W
-	
 	addlw	1
 	movwf	ball_vx
 	movlw	0
 	addwfc	ball_vx + 1
 	return
 	
+;;;;;	REVERSE BALL VY	;;;;;
+;	 ball_vy *= -1	    ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Reverse_ball_vy
 	; 2s complement ball_vy
 	comf	ball_vy + 1, f
 	comf	ball_vy, W
-	
 	addlw	1
 	movwf	ball_vy
 	movlw	0
 	addwfc	ball_vy + 1
 	return
 	
-	
-Collide_ball_slime
+;;;;;	COLLIDE BALL SLIME 0	;;;;;
+;   Collides the ball with slime 0  ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Collide_ball_slime_0
 	; Check if collision needed
-	
 	; Calculate distance
 	; distance = ball_x - slime_x
 	; x
 	movf	slime_0_x, W
 	movff	ball_x, distance_x
 	movff	ball_x + 1, distance_x + 1
-	subwf	distance_x		; lower byte subtraction
+	subwf	distance_x, BANKED		; lower byte subtraction
 	movf	slime_0_x + 1, W
-	subwfb	distance_x + 1		; high byte subtraction w/ borrow
+	subwfb	distance_x + 1, BANKED		; high byte subtraction w/ borrow
 	; y
 	movf	slime_0_y, W
 	movff	ball_y, distance_y
 	movff	ball_y + 1, distance_y + 1
-	subwf	distance_y		; lower byte subtraction
+	subwf	distance_y, BANKED 		; lower byte subtraction
 	movf	slime_0_y + 1, W
-	subwfb	distance_y + 1		; high byte subtraction w/ borrow
-	
+	subwfb	distance_y + 1, BANKED		; high byte subtraction w/ borrow
 	
 	; if abs_distance_x > ball_slime_collision_distance:
 	movff	distance_x, compare_2B_1
@@ -270,16 +287,16 @@ Collide_ball_slime
 	movf	slime_0_vx, W
 	movff	ball_vx, rel_vel_x
 	movff	ball_vx + 1, rel_vel_x + 1
-	subwf	rel_vel_x		; lower byte subtraction
+	subwf	rel_vel_x, BANKED		; lower byte subtraction
 	movf	slime_0_vx + 1, W
-	subwfb	rel_vel_x + 1		; high byte subtraction w/ borrow
+	subwfb	rel_vel_x + 1, BANKED		; high byte subtraction w/ borrow
 	; y
 	movf	slime_0_vy, W
 	movff	ball_vy, rel_vel_y
 	movff	ball_vy + 1, rel_vel_y + 1
-	subwf	rel_vel_y		; lower byte subtraction
+	subwf	rel_vel_y, BANKED		; lower byte subtraction
 	movf	slime_0_vy + 1, W
-	subwfb	rel_vel_y + 1		; high byte subtraction w/ borrow
+	subwfb	rel_vel_y + 1, BANKED		; high byte subtraction w/ borrow
 	
 	; Calculate rel_vel_x * distance_x + rel_vel_y * distance_y
 	lfsr	FSR0, rel_vel_x
@@ -294,36 +311,32 @@ Collide_ball_slime
 	lfsr	FSR1, distance_y
 	call	Mul_16_16_2s_complement	    ; result in FSR2
 	movf	POSTINC2, W
-	addwf	_collision_check
+	addwf	_collision_check, BANKED
 	movf	POSTINC2, W
-	addwfc	_collision_check + 1
+	addwfc	_collision_check + 1, BANKED
 	movf	POSTINC2, W
-	addwfc	_collision_check + 2
+	addwfc	_collision_check + 2, BANKED
 	movf	POSTINC2, W
-	addwfc	_collision_check + 3
+	addwfc	_collision_check + 3, BANKED
 	
 	; If negative: collide (bit set)
-	btfss	_collision_check + 3, 7
-	return
+	btfss	_collision_check + 3, 7, BANKED
+	return		; Positive: skip recollision
 	
-	
-
 	; ball_vx = ball_vx + (	(slime_0_vx - 2 * ball_vx) distance_x + 
 	;			(slime_0_vy - 2 * ball_vy) distance_y	)    * distance_x
-	
 	movff	ball_vx, temp_2B_x
 	movff	ball_vx + 1, temp_2B_x + 1
 	lfsr	FSR0, temp_2B_x
 	call	Multiply_2_2B		; temp_2B_x = 2 * ball_vx
 	
-	movf	temp_2B_x, W
+	movf	temp_2B_x, W, BANKED
 	subwf	slime_0_vx, W
-	movwf	temp_2B_x
-	movf	temp_2B_x + 1, W
+	movwf	temp_2B_x, BANKED
+	movf	temp_2B_x + 1, W, BANKED
 	subwfb	slime_0_vx + 1, W
-	movwf	temp_2B_x + 1		; temp_2B_x = slime_0_vx - 2 * ball_vx
+	movwf	temp_2B_x + 1, BANKED		; temp_2B_x = slime_0_vx - 2 * ball_vx
 	
-
 	; temp_2B_x /= 8 *= distance_x    Divide by 8 to counter distance_xORy scaling.
 	lfsr	FSR0, temp_2B_x
 	call	Divide_8_2B
@@ -338,12 +351,12 @@ Collide_ball_slime
 	movff	ball_vy + 1, temp_2B_y + 1
 	lfsr	FSR0, temp_2B_y
 	call	Multiply_2_2B		; temp_2B_y = 2 * ball_vy
-	movf	temp_2B_y, W
+	movf	temp_2B_y, W, BANKED
 	subwf	slime_0_vy, W
-	movwf	temp_2B_y
-	movf	temp_2B_y + 1, W
+	movwf	temp_2B_y, BANKED
+	movf	temp_2B_y + 1, W, BANKED
 	subwfb	slime_0_vy + 1, W
-	movwf	temp_2B_y + 1		; temp_2B_y = slime_0_vy - 2 * ball_vy
+	movwf	temp_2B_y + 1, BANKED		; temp_2B_y = slime_0_vy - 2 * ball_vy
 	
 	; temp_2B_y /= 8 *= distance_y    Divide by 8 to counter distance_xORy scaling.
 	lfsr	FSR0, temp_2B_y
@@ -356,10 +369,10 @@ Collide_ball_slime
 	; temp_2B_k = (temp_2B_x + temp_2B_y) / 8      /8 to counter scaling of distance_xORy
 	movff	temp_2B_x, temp_2B_k
 	movff	temp_2B_x + 1, temp_2B_k + 1
-	movf	temp_2B_y, W
-	addwf	temp_2B_k, f
-	movf	temp_2B_y + 1, W
-	addwfc	temp_2B_k + 1, f
+	movf	temp_2B_y, W, BANKED
+	addwf	temp_2B_k, f, BANKED
+	movf	temp_2B_y + 1, W, BANKED
+	addwfc	temp_2B_k + 1, f, BANKED
 	lfsr	FSR0, temp_2B_k
 	call	Divide_8_2B
 	
@@ -376,17 +389,198 @@ Collide_ball_slime
 	movff	INDF2, temp_2B_y + 1	    ; temp_2B_y = k dy
 	
 	; Add temp_2B_xORy to ball_vx, ball_vy
-	movf	temp_2B_x, W
+	movf	temp_2B_x, W, BANKED
 	addwf	ball_vx, f
-	movf	temp_2B_x + 1, W
+	movf	temp_2B_x + 1, W, BANKED
 	addwfc	ball_vx + 1, f
-	movf	temp_2B_y, W
+	movf	temp_2B_y, W, BANKED
 	addwf	ball_vy, f
-	movf	temp_2B_y + 1, W
+	movf	temp_2B_y + 1, W, BANKED
 	addwfc	ball_vy + 1, f		    ; v = v + k dxORy
 	
 	return
 
+;;;;;	COLLIDE BALL SLIME 1	;;;;;
+;   Collides the ball with slime 1  ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Collide_ball_slime_1
+	; Check if collision needed
+	; Calculate distance
+	; distance = ball_x - slime_x
+	; x
+	movf	slime_1_x, W
+	movff	ball_x, distance_x
+	movff	ball_x + 1, distance_x + 1
+	subwf	distance_x, BANKED		; lower byte subtraction
+	movf	slime_1_x + 1, W
+	subwfb	distance_x + 1, BANKED		; high byte subtraction w/ borrow
+	; y
+	movf	slime_1_y, W
+	movff	ball_y, distance_y
+	movff	ball_y + 1, distance_y + 1
+	subwf	distance_y, BANKED 		; lower byte subtraction
+	movf	slime_1_y + 1, W
+	subwfb	distance_y + 1, BANKED		; high byte subtraction w/ borrow
+	
+	; if abs_distance_x > ball_slime_collision_distance:
+	movff	distance_x, compare_2B_1
+	movff	distance_x + 1, compare_2B_1 + 1
+	lfsr	FSR0, compare_2B_1
+	call	Absolute_2B		; Turn compare_2B_1 into abs_distance_x
+	movlw	low(ball_slime_collision_distance)
+	movwf	compare_2B_2
+	movlw	high(ball_slime_collision_distance)
+	movwf	compare_2B_2 + 1	; 1: distance_x, 2: collision_distance
+	call	Compare_2B		; W = 1 > 2
+	tstfsz	WREG			; Skip if collision possible, collision_distance (2) > (1) distance_x
+	return
+	
+	; if abs_distance_y > ball_slime_collision_distance:
+	movff	distance_y, compare_2B_1
+	movff	distance_y + 1, compare_2B_1 + 1
+	lfsr	FSR0, compare_2B_1
+	call	Absolute_2B		; Turn compare_2B_1 into abs_distance_y
+	movlw	low(ball_slime_collision_distance)
+	movwf	compare_2B_2
+	movlw	high(ball_slime_collision_distance)
+	movwf	compare_2B_2 + 1	; 1: distance_y, 2: collision_distance
+	call	Compare_2B		; W = 1 > 2
+	tstfsz	WREG			; Skip if collision possible, collision_distance (2) > (1) distance_y
+	return
+	
+	; Calculate norm_dists
+	; distance_xORy = distance_xORy / 64  (represents 8x number)
+	lfsr	FSR0, distance_x
+	call	Divide_8_2B
+	call	Divide_8_2B
+	lfsr	FSR0, distance_y
+	call	Divide_8_2B
+	call	Divide_8_2B
+	
+	; Displacement vector is from slime to ball
+	; Calculate relative velocities = ball_v - slime_v
+	; x
+	movf	slime_1_vx, W
+	movff	ball_vx, rel_vel_x
+	movff	ball_vx + 1, rel_vel_x + 1
+	subwf	rel_vel_x, BANKED		; lower byte subtraction
+	movf	slime_1_vx + 1, W
+	subwfb	rel_vel_x + 1, BANKED		; high byte subtraction w/ borrow
+	; y
+	movf	slime_1_vy, W
+	movff	ball_vy, rel_vel_y
+	movff	ball_vy + 1, rel_vel_y + 1
+	subwf	rel_vel_y, BANKED		; lower byte subtraction
+	movf	slime_1_vy + 1, W
+	subwfb	rel_vel_y + 1, BANKED		; high byte subtraction w/ borrow
+	
+	; Calculate rel_vel_x * distance_x + rel_vel_y * distance_y
+	lfsr	FSR0, rel_vel_x
+	lfsr	FSR1, distance_x
+	call	Mul_16_16_2s_complement	    ; result in FSR2
+	movff	POSTINC2, _collision_check
+	movff	POSTINC2, _collision_check + 1
+	movff	POSTINC2, _collision_check + 2
+	movff	POSTINC2, _collision_check + 3
+
+	lfsr	FSR0, rel_vel_y
+	lfsr	FSR1, distance_y
+	call	Mul_16_16_2s_complement	    ; result in FSR2
+	movf	POSTINC2, W
+	addwf	_collision_check, BANKED
+	movf	POSTINC2, W
+	addwfc	_collision_check + 1, BANKED
+	movf	POSTINC2, W
+	addwfc	_collision_check + 2, BANKED
+	movf	POSTINC2, W
+	addwfc	_collision_check + 3, BANKED
+	
+	; If negative: collide (bit set)
+	btfss	_collision_check + 3, 7, BANKED
+	return		; Positive: skip recollision
+	
+	; ball_vx = ball_vx + (	(slime_1_vx - 2 * ball_vx) distance_x + 
+	;			(slime_1_vy - 2 * ball_vy) distance_y	)    * distance_x
+	movff	ball_vx, temp_2B_x
+	movff	ball_vx + 1, temp_2B_x + 1
+	lfsr	FSR0, temp_2B_x
+	call	Multiply_2_2B		; temp_2B_x = 2 * ball_vx
+	
+	movf	temp_2B_x, W, BANKED
+	subwf	slime_1_vx, W
+	movwf	temp_2B_x, BANKED
+	movf	temp_2B_x + 1, W, BANKED
+	subwfb	slime_1_vx + 1, W
+	movwf	temp_2B_x + 1, BANKED		; temp_2B_x = slime_1_vx - 2 * ball_vx
+	
+	; temp_2B_x /= 8 *= distance_x    Divide by 8 to counter distance_xORy scaling.
+	lfsr	FSR0, temp_2B_x
+	call	Divide_8_2B
+	
+	lfsr	FSR1, distance_x
+	call	Mul_16_16
+	movff	POSTINC2, temp_2B_x
+	movff	INDF2, temp_2B_x + 1	; temp_2B_x = (slime_1_vx - 2 * ball_vx) distance_x
+	
+	; Repeat for y
+	movff	ball_vy, temp_2B_y
+	movff	ball_vy + 1, temp_2B_y + 1
+	lfsr	FSR0, temp_2B_y
+	call	Multiply_2_2B		; temp_2B_y = 2 * ball_vy
+	movf	temp_2B_y, W, BANKED
+	subwf	slime_1_vy, W
+	movwf	temp_2B_y, BANKED
+	movf	temp_2B_y + 1, W, BANKED
+	subwfb	slime_1_vy + 1, W
+	movwf	temp_2B_y + 1, BANKED		; temp_2B_y = slime_1_vy - 2 * ball_vy
+	
+	; temp_2B_y /= 8 *= distance_y    Divide by 8 to counter distance_xORy scaling.
+	lfsr	FSR0, temp_2B_y
+	call	Divide_8_2B
+	lfsr	FSR1, distance_y
+	call	Mul_16_16
+	movff	POSTINC2, temp_2B_y
+	movff	INDF2, temp_2B_y + 1	; temp_2B_y = (slime_1_vy - 2 * ball_vy) distance_y
+
+	; temp_2B_k = (temp_2B_x + temp_2B_y) / 8      /8 to counter scaling of distance_xORy
+	movff	temp_2B_x, temp_2B_k
+	movff	temp_2B_x + 1, temp_2B_k + 1
+	movf	temp_2B_y, W, BANKED
+	addwf	temp_2B_k, f, BANKED
+	movf	temp_2B_y + 1, W, BANKED
+	addwfc	temp_2B_k + 1, f, BANKED
+	lfsr	FSR0, temp_2B_k
+	call	Divide_8_2B
+	
+	; temp_2B_x = temp_2B_k * distance_x
+	lfsr	FSR1, distance_x
+	call	Mul_16_16
+	; TODO: Check if only taking two bytes is enough.
+	movff	POSTINC2, temp_2B_x
+	movff	INDF2, temp_2B_x + 1	    ; temp_2B_x = k dx
+	; temp_2B_y = temp_2B_k * distance_y
+	lfsr	FSR1, distance_y
+	call	Mul_16_16
+	movff	POSTINC2, temp_2B_y
+	movff	INDF2, temp_2B_y + 1	    ; temp_2B_y = k dy
+	
+	; Add temp_2B_xORy to ball_vx, ball_vy
+	movf	temp_2B_x, W, BANKED
+	addwf	ball_vx, f
+	movf	temp_2B_x + 1, W, BANKED
+	addwfc	ball_vx + 1, f
+	movf	temp_2B_y, W, BANKED
+	addwf	ball_vy, f
+	movf	temp_2B_y + 1, W, BANKED
+	addwfc	ball_vy + 1, f		    ; v = v + k dxORy
+	
+	return
+	
+	
+;;;;;	BALL SPEED LIMITER	;;;;;
+;   Limits speed of ball according  ;
+;	to defined constants	    ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;; 
 Speed_Limiter
 	nop
 _vx_speed_limiter
@@ -396,11 +590,11 @@ _vx_speed_limiter
 	call	Absolute_2B
 	; Ensure abs(ball_vx) - ball_max_vel_x < 0 (MSB is clear)
 	movlw	ball_max_vel_x
-	subwf	_speed_limiter_positive_temp, f
+	subwf	_speed_limiter_positive_temp, f, BANKED
 	movlw	0
-	subwfb	_speed_limiter_positive_temp + 1, f
+	subwfb	_speed_limiter_positive_temp + 1, f, BANKED
 	
-	btfsc	_speed_limiter_positive_temp + 1, 7
+	btfsc	_speed_limiter_positive_temp + 1, 7, BANKED
 	bra	_vy_speed_limiter	    ; If set: skip to vy
 	
 	movff	ball_vx + 1, _speed_limiter_sign    ; Store initial sign
@@ -410,7 +604,7 @@ _vx_speed_limiter
 	movwf	ball_vx + 1
 	
 	; Use initial sign to correct literal placed in
-	btfss	_speed_limiter_sign, 7
+	btfss	_speed_limiter_sign, 7, BANKED
 	bra	_vy_speed_limiter	    ; If clear: already positive, skip to vy
 	; Change speed to negative.
 	comf	ball_vx ,f
@@ -427,11 +621,11 @@ _vy_speed_limiter
 	call	Absolute_2B
 	; Ensure abs(ball_vy) - ball_may_vel_y < 0 (MSB is clear)
 	movlw	ball_max_vel_y
-	subwf	_speed_limiter_positive_temp, f
+	subwf	_speed_limiter_positive_temp, f, BANKED
 	movlw	0
-	subwfb	_speed_limiter_positive_temp + 1, f
+	subwfb	_speed_limiter_positive_temp + 1, f, BANKED
 	
-	btfsc	_speed_limiter_positive_temp + 1, 7
+	btfsc	_speed_limiter_positive_temp + 1, 7, BANKED
 	bra	_speed_limiter_end	    ; If set: skip to end
 	
 	movff	ball_vy + 1, _speed_limiter_sign    ; Store initial sign
@@ -441,7 +635,7 @@ _vy_speed_limiter
 	movwf	ball_vy + 1
 	
 	; Use initial sign to correct literal placed in
-	btfss	_speed_limiter_sign, 7
+	btfss	_speed_limiter_sign, 7, BANKED
 	bra	_speed_limiter_end	    ; If clear: already positive, skip to vy
 	; Change speed to negative.
 	comf	ball_vy, f
@@ -453,4 +647,6 @@ _vy_speed_limiter
 
 _speed_limiter_end
 	return
+	
+	
 	end

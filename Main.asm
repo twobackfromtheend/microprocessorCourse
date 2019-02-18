@@ -1,6 +1,6 @@
 #include p18f87k22.inc
 
-	global	MainSetup, MainLoop
+	global	Main_Setup
 
 	extern	Ball_Step, ball_x, ball_y, ball_vx, ball_vy
 	extern	slime_0_x, slime_0_y, slime_0_vx, slime_0_vy
@@ -15,7 +15,7 @@
 Main code
  
  
-MainSetup
+Main_Setup
 ; 	call	UART_Setup	; setup UART
  	movlb	1
 
@@ -25,73 +25,9 @@ MainSetup
 	call	Graphics_Setup
 ;	call	Graphics_wall_Test
 ;	call	Graphics_ball_wall_Test
- 
- 	; Setup ball pos and vel
-;	movlw	0xff
-;	movwf	ball_vx		
-;	movwf	ball_vx + 1	; ball_vx = -1
-	movlw	0x50
-	movwf	ball_vx	
-	movlw	0x00
-	movwf	ball_vx + 1	; ball_vx = 0x10
-	movlw	0x00
-	movwf	ball_vy + 1
-	movlw	0x30
-	movwf	ball_vy	    	; ball_vy = 5
-	movlw	0xC8
-	movwf	ball_x
-
-	
-	movlw	0xA8
-	movwf	ball_y
-	
-	movlw	0x00
-	movwf	ball_x + 1
-	movwf	ball_y + 1
-	
-	; Ball dropping down
-	movlw	0xD0
-	movwf	ball_x
-	movlw	0x07
-	movwf	ball_x + 1
-	
-	movlw	0x60
-	movwf	ball_y
-	movlw	0x02
-	movwf	ball_y + 1
-	
-	movlw	0x23
-	movwf	ball_vx
-	movlw	0
-	movwf	ball_vx + 1
-	movlw	0xd0
-	movwf	ball_vy
-	movlw	0xff
-	movwf	ball_vy + 1
-	
-	; Slime to bottom centre.
-	movlw	0x00
-	movwf	slime_0_vx
-	movwf	slime_0_vx + 1
-	movwf	slime_0_vy
-	movwf	slime_0_vy + 1
-	movwf	slime_0_y
-	movwf	slime_0_y + 1
-	movlw	0xD0
-	movwf	slime_0_x
-	movlw	0x07
-	movwf	slime_0_x + 1
 	return
  
  
-MainLoop
-	call	Ball_Step
-	
-	call	Graphics_wall
-	call	Graphics_ball
-	call	Graphics_slimes
-	bra	MainLoop
-	return
 	
 Graphics_wall_Test
 	call	Graphics_wall
