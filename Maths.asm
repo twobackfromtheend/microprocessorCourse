@@ -4,6 +4,7 @@
     global  Compare_2B, compare_2B_1, compare_2B_2
     global  Absolute_2B
     global  Divide_8_2B, Multiply_2_2B
+    global  Mul_16_16_2s_complement
 
 acs0    udata_acs   ; named variables in access ram
 result_24	res 3
@@ -18,7 +19,12 @@ _lower_prodl	res 1
 _lower_prodh	res 1
 	
 _rotate_temp	res 1
-
+	
+_sign_check	res 1
+positive_multiplier_1	res 2
+positive_multiplier_2	res 2
+	
+	
 Maths	code
     
 	
@@ -237,4 +243,48 @@ negative_multiply
 	rlcf	POSTINC0, f
 	rlcf	POSTDEC0, f	
 	return
+	
+	
+; Multiply 16 bits in FSR0 with 16 bits in FSR1
+; Returned 32 bits in FSR2. FSR0 persists??
+Mul_16_16_2s_complement
+	; Move sign bit from FSR0 to _sign_check
+	movlw	1
+	movff	PLUSW0, _sign_check
+	; XOR sign bit from FSR1 with _sign_check
+	movf	PLUSW1, W
+	xorwf	_sign_check, f
+	; Sign of result is now MSB of _sign_check
+	
+	movff	INDF0, positive_multiplier_1
+	movff	PLUSW0, positive_multiplier_1 + 1
+	lfsr	FSR0, positive_multiplier_1	    ; Absolute_2B modifies FSR0 inplace
+	call	Absolute_2B
+	movff	INDF1, positive_multiplier_2
+	movff	PLUSW1, positive_multiplier_2 + 1
+	lfsr	FSR0, positive_multiplier_2	    ; Absolute_2B modifies FSR0 inplace
+	call	Absolute_2B
+	
+	lfsr	FSR0, positive_multiplier_1
+	lfsr	FSR1, positive_multiplier_2
+	call	Mul_16_16			    ; Result in FSR2, result_32
+	
+	; Change result_32 based on _sign_check
+	btfss	_sign_check, 7			    ; Skip if has to change to negative
+	return	
+	comf	result_32, f
+	comf	result_32 + 1, f
+	comf	result_32 + 2, f
+	comf	result_32 + 3, f
+	movlw	1
+	addwf	result_32
+	movlw	0
+	addwfc	result_32 + 1
+	addwfc	result_32 + 2
+	addwfc	result_32 + 3
+	
+	
+	return
+	
+	
     end

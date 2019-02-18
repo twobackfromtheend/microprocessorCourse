@@ -11,7 +11,9 @@
 	extern  Compare_2B, compare_2B_1, compare_2B_2
 	extern	Absolute_2B
 	extern	Divide_8_2B, Multiply_2_2B
-
+	extern	Mul_16_16_2s_complement
+	
+	extern	LCD_Clear, LCD_Cursor_To_Start, LCD_Cursor_To_Line_2, LCD_Write_Hex_Message_2B
     
 acs0    udata_acs
 ball_x  res	2	; -32768 to 32767 in 2's complement
@@ -26,8 +28,14 @@ temp_2B_x	    res	2
 temp_2B_y	    res	2
 temp_2B_k	    res	2
 	    
-;acs_ovr	access_ovr
+rel_vel_x   res	2
+rel_vel_y   res	2
+   
+_collision_check	    res 4
+_speed_limiter_sign		res 1
+_speed_limiter_positive_temp	res 2
 
+	
 ; distance_xORy/ball_slime_collision_distance always <= 1
 ;norm_dist_x res	1	; 8 * distance_x / ball_slime_collision_distance
 ;norm_dist_y res	1   	; 8 * distance_y / ball_slime_collision_distance
@@ -51,6 +59,15 @@ Ball_Step
 	call	Propagate
 	call	Collide_With_Wall
 	call	Collide_ball_slime
+	call	Speed_Limiter
+	
+	call	LCD_Clear
+	lfsr	FSR2, ball_vx
+	call	LCD_Write_Hex_Message_2B
+	call	LCD_Cursor_To_Line_2
+	lfsr	FSR2, ball_vy
+	call	LCD_Write_Hex_Message_2B
+
 	return
 
 ; Propagate current positions by 1 frame (x = x + vt)
@@ -203,7 +220,6 @@ Collide_ball_slime
 	subwf	distance_x		; lower byte subtraction
 	movf	slime_0_x + 1, W
 	subwfb	distance_x + 1		; high byte subtraction w/ borrow
-
 	; y
 	movf	slime_0_y, W
 	movff	ball_y, distance_y
@@ -248,6 +264,50 @@ Collide_ball_slime
 	call	Divide_8_2B
 	call	Divide_8_2B
 	
+	; Displacement vector is from slime to ball
+	; Calculate relative velocities = ball_v - slime_v
+	; x
+	movf	slime_0_vx, W
+	movff	ball_vx, rel_vel_x
+	movff	ball_vx + 1, rel_vel_x + 1
+	subwf	rel_vel_x		; lower byte subtraction
+	movf	slime_0_vx + 1, W
+	subwfb	rel_vel_x + 1		; high byte subtraction w/ borrow
+	; y
+	movf	slime_0_vy, W
+	movff	ball_vy, rel_vel_y
+	movff	ball_vy + 1, rel_vel_y + 1
+	subwf	rel_vel_y		; lower byte subtraction
+	movf	slime_0_vy + 1, W
+	subwfb	rel_vel_y + 1		; high byte subtraction w/ borrow
+	
+	; Calculate rel_vel_x * distance_x + rel_vel_y * distance_y
+	lfsr	FSR0, rel_vel_x
+	lfsr	FSR1, distance_x
+	call	Mul_16_16_2s_complement	    ; result in FSR2
+	movff	POSTINC2, _collision_check
+	movff	POSTINC2, _collision_check + 1
+	movff	POSTINC2, _collision_check + 2
+	movff	POSTINC2, _collision_check + 3
+
+	lfsr	FSR0, rel_vel_y
+	lfsr	FSR1, distance_y
+	call	Mul_16_16_2s_complement	    ; result in FSR2
+	movf	POSTINC2, W
+	addwf	_collision_check
+	movf	POSTINC2, W
+	addwfc	_collision_check + 1
+	movf	POSTINC2, W
+	addwfc	_collision_check + 2
+	movf	POSTINC2, W
+	addwfc	_collision_check + 3
+	
+	; If negative: collide (bit set)
+	btfss	_collision_check + 3, 7
+	return
+	
+	
+
 	; ball_vx = ball_vx + (	(slime_0_vx - 2 * ball_vx) distance_x + 
 	;			(slime_0_vy - 2 * ball_vy) distance_y	)    * distance_x
 	
@@ -306,6 +366,7 @@ Collide_ball_slime
 	; temp_2B_x = temp_2B_k * distance_x
 	lfsr	FSR1, distance_x
 	call	Mul_16_16
+	; TODO: Check if only taking two bytes is enough.
 	movff	POSTINC2, temp_2B_x
 	movff	INDF2, temp_2B_x + 1	    ; temp_2B_x = k dx
 	; temp_2B_y = temp_2B_k * distance_y
@@ -325,7 +386,71 @@ Collide_ball_slime
 	addwfc	ball_vy + 1, f		    ; v = v + k dxORy
 	
 	return
+
+Speed_Limiter
+	nop
+_vx_speed_limiter
+	movff	ball_vx, _speed_limiter_positive_temp
+	movff	ball_vx + 1, _speed_limiter_positive_temp + 1
+	lfsr	FSR0, _speed_limiter_positive_temp
+	call	Absolute_2B
+	; Ensure abs(ball_vx) - ball_max_vel_x < 0 (MSB is clear)
+	movlw	ball_max_vel_x
+	subwf	_speed_limiter_positive_temp, f
+	movlw	0
+	subwfb	_speed_limiter_positive_temp + 1, f
 	
+	btfsc	_speed_limiter_positive_temp + 1, 7
+	bra	_vy_speed_limiter	    ; If set: skip to vy
 	
+	movff	ball_vx + 1, _speed_limiter_sign    ; Store initial sign
+	movlw	ball_max_vel_x
+	movwf	ball_vx
+	movlw	0
+	movwf	ball_vx + 1
 	
+	; Use initial sign to correct literal placed in
+	btfss	_speed_limiter_sign, 7
+	bra	_vy_speed_limiter	    ; If clear: already positive, skip to vy
+	; Change speed to negative.
+	comf	ball_vx ,f
+	comf	ball_vx + 1, f
+	movlw	1
+	addwf	ball_vx, f
+	movlw	0
+	addwfc	ball_vx + 1, f
+	
+_vy_speed_limiter
+	movff	ball_vy, _speed_limiter_positive_temp
+	movff	ball_vy + 1, _speed_limiter_positive_temp + 1
+	lfsr	FSR0, _speed_limiter_positive_temp
+	call	Absolute_2B
+	; Ensure abs(ball_vy) - ball_may_vel_y < 0 (MSB is clear)
+	movlw	ball_max_vel_y
+	subwf	_speed_limiter_positive_temp, f
+	movlw	0
+	subwfb	_speed_limiter_positive_temp + 1, f
+	
+	btfsc	_speed_limiter_positive_temp + 1, 7
+	bra	_speed_limiter_end	    ; If set: skip to end
+	
+	movff	ball_vy + 1, _speed_limiter_sign    ; Store initial sign
+	movlw	ball_max_vel_y
+	movwf	ball_vy
+	movlw	0
+	movwf	ball_vy + 1
+	
+	; Use initial sign to correct literal placed in
+	btfss	_speed_limiter_sign, 7
+	bra	_speed_limiter_end	    ; If clear: already positive, skip to vy
+	; Change speed to negative.
+	comf	ball_vy, f
+	comf	ball_vy + 1, f
+	movlw	1
+	addwf	ball_vy, f
+	movlw	0
+	addwfc	ball_vy + 1, f
+
+_speed_limiter_end
+	return
 	end

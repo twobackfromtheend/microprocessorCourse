@@ -17,6 +17,8 @@ Main code
  
 MainSetup
 ; 	call	UART_Setup	; setup UART
+ 	movlb	1
+
 	call	LCD_Setup
 	call	SPI_DAC_Setup
 ;	call	SPI_DAC_Test
@@ -58,8 +60,9 @@ MainSetup
 	movlw	0x02
 	movwf	ball_y + 1
 	
-	movlw	0
+	movlw	0x23
 	movwf	ball_vx
+	movlw	0
 	movwf	ball_vx + 1
 	movlw	0xd0
 	movwf	ball_vy

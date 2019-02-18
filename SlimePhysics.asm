@@ -14,10 +14,10 @@ slime_0_x  res	2	; -32768 to 32767 in 2's complement
 slime_0_y  res	2
 slime_0_vx res	2	; -32768 to 32767 in 2's complement
 slime_0_vy res	2
-slime_1_x  res	2
-slime_1_y  res	2
-slime_1_vx res	2
-slime_1_vy res	2
+slime_1_x  res	0
+slime_1_y  res	0
+slime_1_vx res	0
+slime_1_vy res	0
  
  
     
