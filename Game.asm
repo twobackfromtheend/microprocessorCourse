@@ -105,14 +105,14 @@ Set_Game_Start_State
 	
 	; BALL
 	movlw	low(ball_start_x)
-	movwf	ball_start_x
+	movwf	ball_x
 	movlw	high(ball_start_x)
-	movwf	ball_start_x + 1	
+	movwf	ball_x + 1	
 	
 	movlw	low(ball_start_y)
-	movwf	ball_start_y
+	movwf	ball_y
 	movlw	high(ball_start_y)
-	movwf	ball_start_y + 1
+	movwf	ball_y + 1
 	
 	movlw	0
 	movwf	ball_vx

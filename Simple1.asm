@@ -45,6 +45,6 @@ setup
 	; ******* Main programme ****************************************
 start 	call	Timer_Setup
 	goto	$
-	
+	return
 	
 	end

@@ -6,9 +6,6 @@
 
 	global	Slime_Step
 	
-	
-;	extern	LCD_Clear, LCD_Cursor_To_Start, LCD_Cursor_To_Line_2, LCD_Write_Hex_Message_2B
-
 	extern	Mul_16_16
     
     
@@ -27,7 +24,7 @@ slime_1_vy res	2
 SlimePhysics code
 	    
 Slime_Setup	
-	setf	TRISC		; Set PORTC as all outputs
+	setf	TRISC		; Set PORTC as all inputs
 	return
  
 Slime_Step
@@ -83,6 +80,51 @@ Set_slime_0_vx_To_Negative
 	movlw	0xff
 	movwf	slime_0_vx + 1
 Set_slime_0_vx_end
+	
+	; Slime 1: 
+	; PORTC 3 4 5 = UP LEFT RIGHT
+check_1_up
+	btfss	PORTC, 3
+	bra	check_1_left
+	tstfsz	slime_1_y	
+	bra	check_1_left
+	tstfsz	slime_1_y + 1
+	bra	check_1_left
+	movlw	slime_jump_vy
+	movwf	slime_1_vy
+	movlw	0
+	movwf	slime_1_vy + 1
+check_1_left	
+	btfss	PORTC, 4
+	bra	check_1_right_no_left
+	btfss	PORTC, 5			; Know that left is pressed, check if right is also pressed
+	bra	Set_slime_1_vx_To_Negative	; Right not pressed, move left.
+	bra	Set_slime_1_vx_To_0		; Right also pressed
+check_1_right_no_left			; Know that left is not pressed.
+	btfss	PORTC, 5
+	bra	Set_slime_1_vx_To_0	    ; Right not pressed, do not move
+	bra	Set_slime_1_vx_To_Positive  ; Right pressed, move right.	
+	
+Set_slime_1_vx_To_0
+	movlw	0
+	movwf	slime_1_vx
+	movwf	slime_1_vx + 1
+	bra	Set_slime_1_vx_end
+
+Set_slime_1_vx_To_Positive
+	movlw	slime_move_vx
+	movwf	slime_1_vx
+	movlw	0
+	movwf	slime_1_vx + 1
+	bra	Set_slime_1_vx_end
+Set_slime_1_vx_To_Negative
+	movlw	slime_move_vx
+	comf	WREG, W
+	addlw	1
+	movwf	slime_1_vx
+	movlw	0xff
+	movwf	slime_1_vx + 1
+Set_slime_1_vx_end
 
 	return
 	

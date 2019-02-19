@@ -5,6 +5,7 @@
     global  Absolute_2B
     global  Divide_8_2B, Multiply_2_2B
     global  Mul_16_16_2s_complement
+    global  Divide_4B_4096
 
 acs0    udata_acs   ; named variables in access ram
 result_24	res 3
@@ -13,16 +14,16 @@ result_32	res 4
 compare_2B_1	res 2
 compare_2B_2	res 2
 
-acs_ovr	access_ovr
-; For Mul_8_16
 _lower_prodl	res 1
 _lower_prodh	res 1
 	
-_rotate_temp	res 1
 	
 _sign_check	res 1
+	
 positive_multiplier_1	res 2
 positive_multiplier_2	res 2
+;acs_ovr	access_ovr
+
 	
 	
 Maths	code
@@ -167,8 +168,9 @@ Absolute_2B
 	return
 	comf	PLUSW0, f	    ; Complement
 	comf	INDF0, f
-;	movlw	1
+	movlw	1
 	addwf	INDF0, f	    ; Add 1
+	movlw	0
 	addwfc	PLUSW0, f
 	return
 	
@@ -255,13 +257,13 @@ Mul_16_16_2s_complement
 	movf	PLUSW1, W
 	xorwf	_sign_check, f
 	; Sign of result is now MSB of _sign_check
-	
-	movff	INDF0, positive_multiplier_1
-	movff	PLUSW0, positive_multiplier_1 + 1
+	movff	POSTINC0, positive_multiplier_1
+	movff	POSTDEC0, positive_multiplier_1 + 1
 	lfsr	FSR0, positive_multiplier_1	    ; Absolute_2B modifies FSR0 inplace
 	call	Absolute_2B
-	movff	INDF1, positive_multiplier_2
-	movff	PLUSW1, positive_multiplier_2 + 1
+	
+	movff	POSTINC1, positive_multiplier_2
+	movff	POSTDEC1, positive_multiplier_2 + 1
 	lfsr	FSR0, positive_multiplier_2	    ; Absolute_2B modifies FSR0 inplace
 	call	Absolute_2B
 	
@@ -283,7 +285,45 @@ Mul_16_16_2s_complement
 	addwfc	result_32 + 2
 	addwfc	result_32 + 3
 	
+	return
+
+; Divides 4 bytes in FSR0 by 4096 (2^12) and places it in FSR2 (Result spans 4 bytes, but is 3-byte number)
+Divide_4B_4096
+	; Move 4 bytes in FSR0 to result_32
+	movff	POSTINC0, result_32
+	movff	POSTINC0, result_32 + 1
+	movff	POSTINC0, result_32 + 2
+	movff	INDF0, result_32 + 3
+	movff	INDF0, _sign_check		; Keep high byte for sign.
 	
+	movlw	.12		    ; Counter in WREG
+
+	btfss	_sign_check, 7			; Skip if negative
+	bra	positive_divide_4B
+	bra	negative_divide_4B
+	
+positive_divide_4B
+	bcf	STATUS, C	    ; Set carry flag (pad left with 0s)
+	rrcf	result_32 + 3, f
+	rrcf	result_32 + 2, f
+	rrcf	result_32 + 1, f
+	rrcf	result_32, f
+	decfsz	WREG, W
+	bra	positive_divide_4B
+	bra	divide_4096_end
+	
+negative_divide_4B
+	bsf	STATUS, C	    ; Set carry flag (pad left with 1s)
+	rrcf	result_32 + 3, f
+	rrcf	result_32 + 2, f
+	rrcf	result_32 + 1, f
+	rrcf	result_32, f
+	decfsz	WREG, W
+	bra	negative_divide_4B
+	
+divide_4096_end
+	
+	lfsr	FSR2, result_32
 	return
 	
 	

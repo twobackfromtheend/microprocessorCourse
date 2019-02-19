@@ -8,7 +8,7 @@
 
 	constant	ball_max_vel_x = .60	    ; .15
 	constant	ball_max_vel_y = .88	    ; .22
-	constant	ball_gravity = .1	    ; 1
+	constant	ball_gravity = .3	    ; 1
 	
 	constant	slime_jump_vy = .124	    ; .31
 	constant	slime_move_vx = .32	    ; .8

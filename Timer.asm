@@ -6,7 +6,7 @@
 	
 		
 Timer_Interrupt	code	0x0008	; high vector, no low vector
-	btfss	INTCON,TMR0IF	; check that this is timer0 interrupt
+	btfss	INTCON, TMR0IF	; check that this is timer0 interrupt
 	retfie	FAST		; if not then return
 	
 	; Toggle bit 7 on PORTD
@@ -16,7 +16,7 @@ Timer_Interrupt	code	0x0008	; high vector, no low vector
 	call	Game_Loop
 	
 		
-	bcf	INTCON,TMR0IF	; clear interrupt flag
+	bcf	INTCON, TMR0IF	; clear interrupt flag
 	retfie	FAST		; fast return from interrupt
 
 Timer	code
@@ -35,6 +35,7 @@ Timer_Setup
 	movwf	T0CON		; = 62.5KHz clock rate, approx 1sec rollover
 	bsf	INTCON,TMR0IE	; Enable timer0 interrupt
 	bsf	INTCON,GIE	; Enable all interrupts
+	return
 
 
 	end
