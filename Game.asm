@@ -11,7 +11,7 @@
 	extern  LCD_Setup, LCD_Write_Message, LCD_Clear, LCD_Cursor_To_Start, LCD_Cursor_To_Line_2, LCD_Write_Hex_Message_2B
 	extern	LCD_delay_ms
 	extern	SPI_Transmit_12b, SPI_Transmit_ball_xy
-	extern	Graphics_wall, Graphics_ball, Graphics_slimes
+	extern	Graphics_wall, Graphics_net, Graphics_ball, Graphics_slimes
     
 Game code
  
@@ -128,6 +128,7 @@ Game_Loop
 	call	Slime_Step
 	
 	call	Graphics_wall
+	call	Graphics_net
 	call	Graphics_ball
 	call	Graphics_slimes
 	return

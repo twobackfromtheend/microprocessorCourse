@@ -2,6 +2,9 @@
 	constant	wall_x_higher = 0xfa0	    ; .100
 	constant	wall_y_lower = 0x50	    ; .0
 	constant	wall_y_higher = 0xfa0	    ; DOES NOT EXIST
+	
+	constant	net_x = .2000		    ; .500
+	constant	net_height = .520	    ; .130
 
 	constant	ball_radius = .110	    ; .25
         constant	slime_radius = .420	    ; .100
@@ -23,7 +26,7 @@
 	constant	slime_1_start_x = .3200	    ; .800
 	
 	
-	constant	ball_start_x = slime_0_start_x	; .200 or .800
+	constant	ball_start_x = .2000; slime_0_start_x	; .200 or .800
 	constant	ball_start_y = .1680		; .356
 	constant	ball_start_vx = 0		; 0
 	constant	ball_start_vy = 0		; 0

@@ -49,6 +49,12 @@ _speed_limiter_positive_temp	res 2
     constant	ball_wall_y_lower = wall_y_lower + ball_radius
     constant	ball_wall_y_higher = wall_y_higher - ball_radius
     
+    constant	ball_net_x_left = net_x - ball_radius
+    constant	ball_net_x_right = net_x + ball_radius
+    constant	ball_net_y = net_height + ball_radius
+    constant	ball_net_top_bounce_limit = net_height + .30
+
+    
     constant	ball_slime_rectilinear_distance = ball_radius + slime_radius
     constant	ball_slime_euclidean_distance = (ball_radius + slime_radius) * (ball_radius + slime_radius)
     
@@ -58,26 +64,10 @@ BallPhysics code
 Ball_Step
 	call	Ball_Propagate
 	call	Collide_With_Wall
+	call	Collide_With_Net
 	
-	movff	slime_0_x, slime_x
-	movff	slime_0_x + 1, slime_x + 1
-	movff	slime_0_y, slime_y
-	movff	slime_0_y + 1, slime_y + 1
-	movff	slime_0_vx, slime_vx
-	movff	slime_0_vx + 1, slime_vx + 1
-	movff	slime_0_vy, slime_vy
-	movff	slime_0_vy + 1, slime_vy + 1
-	call	Collide_Ball_Slime
-	
-	movff	slime_1_x, slime_x
-	movff	slime_1_x + 1, slime_x + 1
-	movff	slime_1_y, slime_y
-	movff	slime_1_y + 1, slime_y + 1
-	movff	slime_1_vx, slime_vx
-	movff	slime_1_vx + 1, slime_vx + 1
-	movff	slime_1_vy, slime_vy
-	movff	slime_1_vy + 1, slime_vy + 1
-	call	Collide_Ball_Slime
+	call	Collide_Ball_Slime_0
+	call	Collide_Ball_Slime_1
 
 	call	Speed_Limiter
 	
@@ -253,6 +243,128 @@ Reverse_ball_vy
 	movlw	0
 	addwfc	ball_vy + 1
 	return
+	
+
+;;;;;	COLLIDE BALL NET	;;;;;
+;   Collides the ball with net    ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+Collide_With_Net
+	; For ANY collision:
+	; ball_net_x_left < ball_x < ball_net_x_right AND
+	; ball_y < ball_net_y
+	
+	movlw	low(ball_net_x_left)
+	movwf	compare_2B_1
+	movlw	high(ball_net_x_left)
+	movwf	compare_2B_1 + 1
+	
+	movff	ball_x, compare_2B_2
+	movff	ball_x + 1, compare_2B_2 + 1
+	call	Compare_2B		    ; bool(ball_net_x_left > ball_x) in W
+	tstfsz	WREG			    ; Skip if ball_x >= ball_net_x_left
+	return
+	
+	movff	ball_x, compare_2B_1
+	movff	ball_x + 1, compare_2B_1 + 1
+	
+	movlw	low(ball_net_x_right)
+	movwf	compare_2B_2
+	movlw	high(ball_net_x_right)
+	movwf	compare_2B_2 + 1
+
+	call	Compare_2B		    ; bool(ball_x > ball_net_x_right) in W
+	tstfsz	WREG			    ; Skip if ball_x <= ball_net_x_right
+	return
+	
+	
+	movff	ball_y, compare_2B_1
+	movff	ball_y + 1, compare_2B_1 + 1
+	
+	movlw	low(ball_net_y)
+	movwf	compare_2B_2
+	movlw	high(ball_net_y)
+	movwf	compare_2B_2 + 1
+
+	call	Compare_2B		    ; bool(ball_y > ball_net_y) in W
+	tstfsz	WREG			    ; Skip if ball_y <= ball_net_y
+	return
+
+	
+	; Met conditions for collision
+	
+	; if ball_vy > 0 AND ball_y > ball_net_top_bounce_limit:
+	; Top bounce, flip ball_vy
+	btfss	ball_vy + 1, 7		    ; Skip if ball_vy < 0
+	bra	net_side_bounce
+	movlw	ball_net_top_bounce_limit
+	cpfsgt	ball_y			    ; Know ball_y is 1 byte already, skip if ball_y > ball_net_top_bounce_limit
+	bra	net_side_bounce
+	call	Reverse_ball_vy
+	return	
+	
+
+net_side_bounce
+	call	Reverse_ball_vx		    ; Here, we know that ball bounced off net, and off the sides.
+	
+	; if ball_x < net_x, set ball_x to (ball_net_x_left - buffer)
+	; else: set ball_x = ball_net_x_right + buffer
+	movlw	low(net_x)
+	movwf	compare_2B_1
+	movlw	high(net_x)
+	movwf	compare_2B_1 + 1
+	
+	movff	ball_x, compare_2B_2
+	movff	ball_x + 1, compare_2B_2 + 1
+	
+	call	Compare_2B		    ; (net_x > ball_x) in W
+	tstfsz	WREG			    ; Skip if ball_x > net_x
+	bra	set_ball_x_left_net
+	bra	set_ball_x_right_net
+
+set_ball_x_left_net
+	movlw	low(ball_net_x_left)
+	sublw	.10
+	movwf	ball_x
+	movlw	high(ball_net_x_left)
+	movwf	ball_x + 1
+	movlw	0
+	subwfb	ball_x + 1, f
+	return
+	
+set_ball_x_right_net
+	movlw	low(ball_net_x_right)
+	addlw	.10
+	movwf	ball_x
+	movlw	high(ball_net_x_right)
+	movwf	ball_x + 1
+	movlw	0
+	addwfc	ball_x + 1, f
+	return
+	
+Collide_Ball_Slime_0
+	movff	slime_0_x, slime_x
+	movff	slime_0_x + 1, slime_x + 1
+	movff	slime_0_y, slime_y
+	movff	slime_0_y + 1, slime_y + 1
+	movff	slime_0_vx, slime_vx
+	movff	slime_0_vx + 1, slime_vx + 1
+	movff	slime_0_vy, slime_vy
+	movff	slime_0_vy + 1, slime_vy + 1
+	call	Collide_Ball_Slime
+	return
+	
+Collide_Ball_Slime_1
+	movff	slime_1_x, slime_x
+	movff	slime_1_x + 1, slime_x + 1
+	movff	slime_1_y, slime_y
+	movff	slime_1_y + 1, slime_y + 1
+	movff	slime_1_vx, slime_vx
+	movff	slime_1_vx + 1, slime_vx + 1
+	movff	slime_1_vy, slime_vy
+	movff	slime_1_vy + 1, slime_vy + 1
+	call	Collide_Ball_Slime
+	return
+	
 	
 ;;;;;		COLLIDE BALL SLIME	    ;;;;;
 ;   Checks to see if ball and slime collide	;

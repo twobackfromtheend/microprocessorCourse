@@ -2,7 +2,7 @@
 #include constants.inc
 	
 	global	Graphics_Setup
-	global	Graphics_wall, Graphics_ball, Graphics_slimes
+	global	Graphics_wall, Graphics_net, Graphics_ball, Graphics_slimes
 	
 	extern	ball_x, ball_y
 	extern	slime_0_x, slime_0_y, slime_1_x, slime_1_y
@@ -166,6 +166,37 @@ p4_p1	call	Graphics_Plot_temp_xy
 	movwf	temp_x				; Set temp_x to wall_x_lower (prevent overflow)
 	
 	return
+	
+Graphics_net
+	; Start temp_xy at bottom of net
+	movlw	low(net_x)
+	movwf	temp_x
+	movlw	high(net_x)
+	movwf	temp_x + 1
+	movlw	0
+	movwf	temp_y
+	movwf	temp_y + 1
+	
+	; Increase temp_y until net_height
+draw_net
+	call	Graphics_Plot_temp_xy
+	movlw	wall_step
+	addwf	temp_y, f
+	movlw	0
+	addwfc	temp_y + 1
+	
+	movlw	low(net_height)		; If temp_y < net_height: loop
+	movwf	compare_2B_1
+	movlw	high(net_height)
+	movwf	compare_2B_1 + 1		; 2B_1 = net_height
+	movff	temp_y, compare_2B_2
+	movff	temp_y + 1, compare_2B_2 + 1	; 2B_2 = temp_y
+	call	Compare_2B		
+	tstfsz	WREG		; Skip if 2B_1 (wall_y_higher) <= 2B_2 (temp_y)
+	bra	draw_net
+	
+	return
+	
 	
 Graphics_ball
 	; Draw +ve quadrant
