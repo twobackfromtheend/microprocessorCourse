@@ -30,8 +30,8 @@ pdata	code    ; a section of programme memory for storing data
 main	code
 	; ******* Programme FLASH read Setup Code ***********************
 setup	
-;	bcf	EECON1, CFGS	; point to Flash program memory  
-;	bsf	EECON1, EEPGD 	; access Flash program memory
+	bcf	EECON1, CFGS	; point to Flash program memory  
+	bsf	EECON1, EEPGD 	; access Flash program memory
 ;	call	UART_Setup	; setup UART
 ;	call	LCD_Setup	; setup LCD
 ;	call	KP_Setup	; setup Keypad

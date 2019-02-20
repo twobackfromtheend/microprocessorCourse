@@ -62,6 +62,8 @@ BallPhysics code
 	    
  
 Ball_Step
+  	movlb	1
+
 	call	Ball_Propagate
 	call	Collide_With_Wall
 	call	Collide_With_Net

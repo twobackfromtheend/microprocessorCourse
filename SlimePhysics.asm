@@ -7,7 +7,8 @@
 	global	Slime_Step
 	
 	extern	Mul_16_16
-    
+    	extern  Compare_2B, compare_2B_1, compare_2B_2
+
     
 acs0    udata_acs
 slime_0_x  res	2	; -32768 to 32767 in 2's complement
@@ -18,7 +19,13 @@ slime_1_x  res	2
 slime_1_y  res	2
 slime_1_vx res	2
 slime_1_vy res	2
+ 	
  
+	constant	slime_0_left_limit = wall_x_lower + slime_radius
+	constant	slime_0_right_limit = net_x - slime_radius
+	constant	slime_1_left_limit = net_x + slime_radius
+	constant	slime_1_right_limit = wall_x_higher - slime_radius
+	
  
     
 SlimePhysics code
@@ -31,8 +38,8 @@ Slime_Step
 	call	Update_With_Controls
 	call	Slime_0_Propagate
 	call	Slime_1_Propagate
+	call	Clip_Slime_Positions
 
-;	call	Collide_With_Wall
 	return
 
 Update_With_Controls
@@ -200,6 +207,82 @@ Set_Slime_1_To_0
 	movwf	slime_1_vy + 1
 	return
 
+Clip_Slime_Positions
+	; Ensure slime_0_left_limit <= slime_0_x <= slime_0_right_limit
+	movff	slime_0_x, compare_2B_1
+	movff	slime_0_x + 1, compare_2B_1 + 1
+	movlw	low(slime_0_left_limit)
+	movwf	compare_2B_2
+	movlw	high(slime_0_left_limit)
+	movwf	compare_2B_2 + 1
+	
+	call	Compare_2B		    ; (slime_0_x > slime_0_left_limit) in W
+	tstfsz	WREG			    ; Skip if slime_0_x < slime_0_left_limit
+	bra	slime_0_right_limit_check
+	; slime_0_x < slime_0_left_limits, set to slime_0_left_limit
+	movlw	low(slime_0_left_limit)
+	movwf	slime_0_x
+	movlw	high(slime_0_left_limit)
+	movwf	slime_0_x + 1
+	bra	slime_0_check_end
+	
+slime_0_right_limit_check
+	movlw	low(slime_0_right_limit)
+	movwf	compare_2B_1
+	movlw	high(slime_0_right_limit)
+	movwf	compare_2B_1 + 1
+	
+	movff	slime_0_x, compare_2B_2
+	movff	slime_0_x + 1, compare_2B_2 + 1
+	call	Compare_2B		    ; (slime_0_x < slime_0_right_limit) in W
+	tstfsz	WREG			    ; Skip if  slime_0_x > slime_0_right_limit
+	bra	slime_0_check_end
+	; slime_0_x > slime_0_right_limit_check, set to slime_0_right_limit_check
+	movlw	low(slime_0_right_limit)
+	movwf	slime_0_x
+	movlw	high(slime_0_right_limit)
+	movwf	slime_0_x + 1
+slime_0_check_end
+	
+	; Ensure slime_1_left_limit <= slime_1_x <= slime_1_right_limit
+	movff	slime_1_x, compare_2B_1
+	movff	slime_1_x + 1, compare_2B_1 + 1
+	movlw	low(slime_1_left_limit)
+	movwf	compare_2B_2
+	movlw	high(slime_1_left_limit)
+	movwf	compare_2B_2 + 1
+	
+	call	Compare_2B		    ; (slime_1_x > slime_1_left_limit) in W
+	tstfsz	WREG			    ; Skip if slime_1_x < slime_1_left_limit
+	bra	slime_1_right_limit_check
+	; slime_1_x < slime_1_left_limits, set to slime_1_left_limit
+	movlw	low(slime_1_left_limit)
+	movwf	slime_1_x
+	movlw	high(slime_1_left_limit)
+	movwf	slime_1_x + 1
+	bra	slime_1_check_end
+	
+slime_1_right_limit_check
+	movlw	low(slime_1_right_limit)
+	movwf	compare_2B_1
+	movlw	high(slime_1_right_limit)
+	movwf	compare_2B_1 + 1
+	
+	movff	slime_1_x, compare_2B_2
+	movff	slime_1_x + 1, compare_2B_2 + 1
+	call	Compare_2B		    ; (slime_1_x < slime_1_right_limit) in W
+	tstfsz	WREG			    ; Skip if  slime_1_x > slime_1_right_limit
+	bra	slime_1_check_end
+	; slime_1_x > slime_1_right_limit_check, set to slime_1_right_limit_check
+	movlw	low(slime_1_right_limit)
+	movwf	slime_1_x
+	movlw	high(slime_1_right_limit)
+	movwf	slime_1_x + 1
+slime_1_check_end
+	
+	
+	return
+	
 
 	end
 

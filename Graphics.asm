@@ -15,20 +15,28 @@
 acs0    udata_acs
 temp_x  res	2
 temp_y	res	2
-ball_points_ram	res .14
+ball_points_ram	res .22
 ;slime_points_ram    res	.14
 counter		res 1
-
-
-	constant	wall_step = 0x10
+counter_1   res	1
+   
+bank3   udata	0x300
+circle_x    res	2
+circle_y    res	2
+circle_divisor	res 1
+	
+	constant	wall_step = 0x30
+	constant	slime_eye_offset = .200
 	
 Graphics code
 
 ;ball_points  data    .0,.4,.1,.4,.2,.3,.3,.3,.3,.2,.4,.1,.4,.0
 ;ball_points  data    .0,.40,.10,.40,.20,.30,.30,.30,.30,.20,.40,.10,.40,.00
 ;ball_points	db	    .0,.200,.50,.200,.100,.150,.150,.150,.150,.100,.200,.50,.200,.00
-ball_points	db	    .0,.100,.25,.100,.50,.75,.75,.75,.75,.50,.100,.25,.100,.00
-		constant    ball_points_count=.7	; x2 for number of ints.
+;ball_points	db	    .0,.100,.25,.100,.50,.75,.75,.75,.75,.50,.100,.25,.100,.00
+;		constant    ball_points_count=.7	; x2 for number of ints.
+ball_points	db	    .100,.0,.99,.16,.95,.31,.89,.45,.81,.59,.71,.71,.59,.81,.45,.89,.31,.95,.16,.99,.0,.100
+		constant    ball_points_count=.11	; x2 for number of ints.
 ;slime_points	dw	    .00,.400,.100,.400,.200,.300,.300,.300,.300,.200,.400,.100,.400,.00
 ;		constant    slime_points_count=.7
 		constant    slime_ball_radius_multiplier=.4
@@ -380,6 +388,27 @@ draw_slime_0_nxpy
 	call	Graphics_Plot_temp_xy
 	decfsz	counter
 	bra	draw_slime_0_nxpy
+	
+	
+	; Draw eye
+	movff	slime_0_x, circle_x
+	movff	slime_0_x + 1, circle_x + 1
+	movff	slime_0_y, circle_y
+	movff	slime_0_y + 1, circle_y + 1
+	
+	movlb	3
+	movlw	slime_eye_offset
+	addwf	circle_x, BANKED
+	movlw	0
+	addwfc	circle_x + 1, BANKED
+	movlw	slime_eye_offset
+	addwf	circle_y, BANKED
+	movlw	0
+	addwfc	circle_y + 1, BANKED
+	
+	movlw	1
+	movwf	circle_divisor, BANKED
+	call	Graphics_circle
 	return
 	
 ;;;;;	DRAW SLIME 1 GRAPHICS	;;;;;
@@ -466,6 +495,117 @@ Graphics_Plot_temp_xy
 ;	call	LCD_delay_x4us
 	bsf	LATD, 0		
 	return
+	
+	
+; Draws circle at circle_x, circle_y, scaled down by 2^circle_divisor
+Graphics_circle	
+	; Draw +ve quadrant
+	lfsr	FSR0, ball_points_ram
+	movlw	ball_points_count
+	movwf 	counter	
+draw_circle_pxpy
+	movff	circle_x, temp_x
+	movff	circle_x + 1, temp_x + 1
+	movff	circle_y, temp_y
+	movff	circle_y + 1, temp_y + 1
+
+	movf	POSTINC0, W	    ; x-offset
+	call	Divide_W_by_2_cd
+	addwf	temp_x
+	movlw	0
+	addwfc	temp_x + 1
+	movf	POSTINC0, W	    ; y-offset
+	call	Divide_W_by_2_cd
+	addwf	temp_y
+	movlw	0
+	addwfc	temp_y + 1
+	call	Graphics_Plot_temp_xy
+	decfsz	counter
+	bra	draw_circle_pxpy
+	
+;	; Draw -y quadrant
+	lfsr	FSR0, ball_points_ram
+	movlw	ball_points_count
+	movwf 	counter	
+draw_circle_pxny
+	movff	circle_x, temp_x
+	movff	circle_x + 1, temp_x + 1
+	movff	circle_y, temp_y
+	movff	circle_y + 1, temp_y + 1
+	movf	POSTINC0, W	    ; x-offset
+	call	Divide_W_by_2_cd
+	addwf	temp_x
+	movlw	0
+	addwfc	temp_x + 1
+	movf	POSTINC0, W	    ; y-offset
+	call	Divide_W_by_2_cd
+	subwf	temp_y
+	movlw	0
+	subwfb	temp_y + 1
+	call	Graphics_Plot_temp_xy
+	decfsz	counter
+	bra	draw_circle_pxny
+	
+	; Draw -x-y quadrant
+	lfsr	FSR0, ball_points_ram
+	movlw	ball_points_count
+	movwf 	counter	
+draw_circle_nxny
+	movff	circle_x, temp_x
+	movff	circle_x + 1, temp_x + 1
+	movff	circle_y, temp_y
+	movff	circle_y + 1, temp_y + 1
+	movf	POSTINC0, W	    ; x-offset
+	call	Divide_W_by_2_cd
+	subwf	temp_x
+	movlw	0
+	subwfb	temp_x + 1
+	movf	POSTINC0, W	    ; y-offset
+	call	Divide_W_by_2_cd
+	subwf	temp_y
+	movlw	0
+	subwfb	temp_y + 1
+	call	Graphics_Plot_temp_xy
+	decfsz	counter
+	bra	draw_circle_nxny
+	
+	; Draw -x quadrant
+	lfsr	FSR0, ball_points_ram
+	movlw	ball_points_count
+	movwf 	counter	
+draw_circle_nxpy
+	movff	circle_x, temp_x
+	movff	circle_x + 1, temp_x + 1
+	movff	circle_y, temp_y
+	movff	circle_y + 1, temp_y + 1
+	movf	POSTINC0, W	    ; x-offset
+	call	Divide_W_by_2_cd
+	subwf	temp_x
+	movlw	0
+	subwfb	temp_x + 1
+	movf	POSTINC0, W	    ; y-offset
+	call	Divide_W_by_2_cd
+	addwf	temp_y
+	movlw	0
+	addwfc	temp_y + 1
+	call	Graphics_Plot_temp_xy
+	decfsz	counter
+	bra	draw_circle_nxpy
+	return
+	
+Divide_W_by_2_cd
+	tstfsz	circle_divisor	    ; Handle circle_divisor = 0 case
+	bra	do_divide
+	return
+do_divide
+	movff	circle_divisor, counter_1
+divide_loop	
+	bcf	STATUS, C	    ; Clear carry flag
+	rrcf	WREG, W
+	decfsz	counter_1, f
+	bra	divide_loop
+	return
+	
 	end
 
 

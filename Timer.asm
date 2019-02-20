@@ -24,8 +24,13 @@ Timer	code
 Timer_Setup
 	bcf	TRISD, 7	; Output on pin 7
 	
-	movlw	b'10000000'	; Set timer0 to 16-bit, Fosc/4/256
-	; approx 40ms frame
+;	movlw	b'10000000'
+;	; approx 8ms frame
+;	movlw	b'10000011'
+	; approx 65ms frame
+	movlw	b'10000010'
+	; approx 30ms frame
+	
 	
 ;	movlw	b'10000111'	; Set timer0 to 16-bit, Fosc/4/256
 	; Approx 1Hz
