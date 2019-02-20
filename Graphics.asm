@@ -406,7 +406,7 @@ draw_slime_0_nxpy
 	movlw	0
 	addwfc	circle_y + 1, BANKED
 	
-	movlw	1
+	movlw	0
 	movwf	circle_divisor, BANKED
 	call	Graphics_circle
 	return
