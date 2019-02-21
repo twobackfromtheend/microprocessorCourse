@@ -4,8 +4,9 @@
 	global	SPI_Transmit_ball_xy
 	
 	extern	ball_x, ball_y
-	extern	LCD_delay_x4us
     
+	extern	Delay_s, Delay_ms, Delay_x4us, Delay_250_ns
+
 SPI_DAC code
  
  
@@ -54,10 +55,10 @@ SPI_Transmit_12b
 	
 	bsf	LATD, 1		; CS raise
 	movlw	1
-	call	LCD_delay_x4us
+	call	Delay_x4us
 
 	bcf	LATD, 0		; LDAC low edge (write)
-	call	LCD_delay_x4us
+	call	Delay_x4us
 	bsf	LATD, 0
 	return
 
@@ -84,10 +85,10 @@ SPI_Transmit_ball_xy
 	bsf	LATD, 2		; CS2 raise
 
 	movlw	1
-	call	LCD_delay_x4us
+	call	Delay_x4us
 
 	bcf	LATD, 0		; LDAC low edge (write)
-	call	LCD_delay_x4us
+	call	Delay_x4us
 	bsf	LATD, 0		
 	return
 	

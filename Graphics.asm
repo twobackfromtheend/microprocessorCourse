@@ -2,21 +2,22 @@
 #include constants.inc
 	
 	global	Graphics_Setup
-	global	Graphics_wall, Graphics_net, Graphics_ball, Graphics_slimes
+	global	Graphics_wall, Graphics_net, Graphics_ball, Graphics_slimes, Graphics_scores
 	
 	extern	ball_x, ball_y
 	extern	slime_0_x, slime_0_y, slime_1_x, slime_1_y
+	
+	extern	player_0_score, player_1_score	
+	
 	extern	SPI_Transmit_W
-	extern	LCD_delay_x4us
 
-;	extern	wall_x_lower, wall_x_higher, wall_y_lower, wall_y_higher
 	extern  Compare_2B, compare_2B_1, compare_2B_2
+	
 
 acs0    udata_acs
 temp_x  res	2
 temp_y	res	2
-ball_points_ram	res .22
-;slime_points_ram    res	.14
+circle_sd_points_ram	res .22
 counter		res 1
 counter_1   res	1
    
@@ -24,60 +25,97 @@ bank3   udata	0x300
 circle_x    res	2
 circle_y    res	2
 circle_divisor	res 1
+    
+draw_line_end	res 2
+	
+circle_hd_points_ram res .60
+ 
+circle_lowd_points_ram	res .6
+ 
+counter_scores	res 1
 	
 	constant	wall_step = 0x30
 	constant	slime_eye_offset = .200
 	
-Graphics code
+	constant	scoreboard_height = .3200
+	constant	scoreboard_left = .200
+	constant	scoreboard_right = .4000 - scoreboard_left
 
-;ball_points  data    .0,.4,.1,.4,.2,.3,.3,.3,.3,.2,.4,.1,.4,.0
-;ball_points  data    .0,.40,.10,.40,.20,.30,.30,.30,.30,.20,.40,.10,.40,.00
-;ball_points	db	    .0,.200,.50,.200,.100,.150,.150,.150,.150,.100,.200,.50,.200,.00
-;ball_points	db	    .0,.100,.25,.100,.50,.75,.75,.75,.75,.50,.100,.25,.100,.00
-;		constant    ball_points_count=.7	; x2 for number of ints.
-ball_points	db	    .100,.0,.99,.16,.95,.31,.89,.45,.81,.59,.71,.71,.59,.81,.45,.89,.31,.95,.16,.99,.0,.100
-		constant    ball_points_count=.11	; x2 for number of ints.
-;slime_points	dw	    .00,.400,.100,.400,.200,.300,.300,.300,.300,.200,.400,.100,.400,.00
-;		constant    slime_points_count=.7
-		constant    slime_ball_radius_multiplier=.4
+	constant	scoreboard_padding = .250
+	
+Graphics code
+circle_sd_points    db	    .100,.0,.99,.16,.95,.31,.89,.45,.81,.59,.71,.71,.59,.81,.45,.89,.31,.95,.16,.99,.0,.100
+		constant    circle_sd_points_count=.11	; x2 for number of ints.
+;circle_hd_points    db	    .100,.0,.99,.16,.95,.31,.89,.45,.81,.59,.71,.71,.59,.81,.45,.89,.31,.95,.16,.99,.0,.100
+;		constant    circle_hd_points_count=.11	; x2 for number of ints.
+;circle_hd_points    db	   .200,.5,.199,.16,.198,.26,.197,.36,.194,.47,.192,.57,.189,.67,.185,.77,.181,.86,.176,.95,.171,.104,.165,.113,.159,.122,.152,.130,.145,.138,.138,.145,.130,.152,.122,.159,.113,.165,.104,.171,.95,.176,.86,.181,.77,.185,.67,.189,.57,.192,.47,.194,.36,.197,.26,.198,.16,.199,.5,.200
+;		constant    circle_hd_points_count=.30
+;circle_hd_points    db	    .100,.3,.100,.8,.99,.13,.98,.18,.97,.23,.96,.28,.94,.33,.92,.38,.90,.43,.88,.48,.85,.52,.82,.57,.79,.61,.76,.65,.73,.69,.69,.73,.65,.76,.61,.79,.57,.82,.52,.85,.48,.88,.43,.90,.38,.92,.33,.94,.28,.96,.23,.97,.18,.98,.13,.99,.8,.100,.3,.100
+;		constant    circle_hd_points_count=.30
+circle_hd_points    db	.100,.4,.99,.11,.98,.18,.97,.25,.95,.32,.92,.38,.89,.45,.86,.51,.82,.57,.78,.63,.73,.68,.68,.73,.63,.78,.57,.82,.51,.86,.45,.89,.38,.92,.32,.95,.25,.97,.18,.98,.11,.99,.4,.100
+		constant    circle_hd_points_count=.22
+circle_lowd_points  db	.97,.26,.71,.71,.26,.97
+		constant    circle_lowd_points_count=.3
+
+		constant    slime_radius_multiplier=.4
 Graphics_Setup
-	; Load ball_points_ram from program memory
-	lfsr	FSR0, ball_points_ram	; Load FSR0 with address in RAM	
-	movlw	upper(ball_points)
+	; Load circle_sd_points from program memory
+	lfsr	FSR0, circle_sd_points_ram	; Load FSR0 with address in RAM	
+	movlw	upper(circle_sd_points)
 	movwf	TBLPTRU	
-	movlw	high(ball_points)
+	movlw	high(circle_sd_points)
 	movwf	TBLPTRH	
-	movlw	low(ball_points)
+	movlw	low(circle_sd_points)
 	movwf	TBLPTRL
 
-	movlw	ball_points_count
-	movwf 	counter			; counter initialised to ball_points_count
-copy_ball_points_loop
+	movlw	circle_sd_points_count
+	movwf 	counter			; counter initialised to circle_sd_points_count
+copy_circle_sd_points_loop
 	tblrd*+			; one byte from PM to TABLAT, increment TBLPTR
 	movff	TABLAT, POSTINC0
 	tblrd*+			; one byte from PM to TABLAT, increment TBLPTR
 	movff	TABLAT, POSTINC0
 	decfsz	counter
-	bra	copy_ball_points_loop
+	bra	copy_circle_sd_points_loop
 	
-;	; Load slime_points_ram from program memory
-;	lfsr	FSR0, slime_points_ram	; Load FSR0 with address in RAM	
-;	movlw	upper(slime_points)
-;	movwf	TBLPTRU	
-;	movlw	high(slime_points)
-;	movwf	TBLPTRH	
-;	movlw	low(slime_points)
-;	movwf	TBLPTRL
-;
-;	movlw	slime_points_count
-;	movwf 	counter			; counter initialised to ball_points_count
-;copy_slime_points_loop
-;	tblrd*+			; one byte from PM to TABLAT, increment TBLPTR
-;	movff	TABLAT, POSTINC0
-;	tblrd*+			; one byte from PM to TABLAT, increment TBLPTR
-;	movff	TABLAT, POSTINC0
-;	decfsz	counter
-;	bra	copy_slime_points_loop
+	; Load circle_hd_points from program memory
+	lfsr	FSR0, circle_hd_points_ram	; Load FSR0 with address in RAM	
+	movlw	upper(circle_hd_points)
+	movwf	TBLPTRU	
+	movlw	high(circle_hd_points)
+	movwf	TBLPTRH	
+	movlw	low(circle_hd_points)
+	movwf	TBLPTRL
+
+	movlw	circle_hd_points_count
+	movwf 	counter			; counter initialised to circle_hd_points_count
+copy_circle_hd_points_loop
+	tblrd*+			; one byte from PM to TABLAT, increment TBLPTR
+	movff	TABLAT, POSTINC0
+	tblrd*+			; one byte from PM to TABLAT, increment TBLPTR
+	movff	TABLAT, POSTINC0
+	decfsz	counter
+	bra	copy_circle_hd_points_loop
+	
+	
+	; Load circle_low_points from program memory
+	lfsr	FSR0, circle_lowd_points_ram	; Load FSR0 with address in RAM	
+	movlw	upper(circle_lowd_points)
+	movwf	TBLPTRU	
+	movlw	high(circle_lowd_points)
+	movwf	TBLPTRH	
+	movlw	low(circle_lowd_points)
+	movwf	TBLPTRL
+
+	movlw	circle_lowd_points_count
+	movwf 	counter			; counter initialised to circle_hd_points_count
+copy_circle_lowd_points_loop
+	tblrd*+			; one byte from PM to TABLAT, increment TBLPTR
+	movff	TABLAT, POSTINC0
+	tblrd*+			; one byte from PM to TABLAT, increment TBLPTR
+	movff	TABLAT, POSTINC0
+	decfsz	counter
+	bra	copy_circle_lowd_points_loop
 	return
 
 ; Draws wall
@@ -207,91 +245,13 @@ draw_net
 	
 	
 Graphics_ball
-	; Draw +ve quadrant
-	lfsr	FSR0, ball_points_ram
-	movlw	ball_points_count
-	movwf 	counter	
-draw_ball_pxpy
-	movff	ball_x, temp_x
-	movff	ball_x + 1, temp_x + 1
-	movff	ball_y, temp_y
-	movff	ball_y + 1, temp_y + 1
-
-	movf	POSTINC0, W	    ; x-offset
-	addwf	temp_x
+	movff	ball_x, circle_x
+	movff	ball_x + 1, circle_x + 1
+	movff	ball_y, circle_y
+	movff	ball_y + 1, circle_y + 1
 	movlw	0
-	addwfc	temp_x + 1
-	movf	POSTINC0, W	    ; y-offset
-	addwf	temp_y
-	movlw	0
-	addwfc	temp_y + 1
-	call	Graphics_Plot_temp_xy
-	decfsz	counter
-	bra	draw_ball_pxpy
-	
-;	; Draw -y quadrant
-	lfsr	FSR0, ball_points_ram
-	movlw	ball_points_count
-	movwf 	counter	
-draw_ball_pxny
-	movff	ball_x, temp_x
-	movff	ball_x + 1, temp_x + 1
-	movff	ball_y, temp_y
-	movff	ball_y + 1, temp_y + 1
-	movf	POSTINC0, W	    ; x-offset
-	addwf	temp_x
-	movlw	0
-	addwfc	temp_x + 1
-	movf	POSTINC0, W	    ; y-offset
-	subwf	temp_y
-	movlw	0
-	subwfb	temp_y + 1
-	call	Graphics_Plot_temp_xy
-	decfsz	counter
-	bra	draw_ball_pxny
-	
-	; Draw -x-y quadrant
-	lfsr	FSR0, ball_points_ram
-	movlw	ball_points_count
-	movwf 	counter	
-draw_ball_nxny
-	movff	ball_x, temp_x
-	movff	ball_x + 1, temp_x + 1
-	movff	ball_y, temp_y
-	movff	ball_y + 1, temp_y + 1
-	movf	POSTINC0, W	    ; x-offset
-	subwf	temp_x
-	movlw	0
-	subwfb	temp_x + 1
-	movf	POSTINC0, W	    ; y-offset
-	subwf	temp_y
-	movlw	0
-	subwfb	temp_y + 1
-	call	Graphics_Plot_temp_xy
-	decfsz	counter
-	bra	draw_ball_nxny
-	
-	; Draw -x quadrant
-	lfsr	FSR0, ball_points_ram
-	movlw	ball_points_count
-	movwf 	counter	
-draw_ball_nxpy
-	movff	ball_x, temp_x
-	movff	ball_x + 1, temp_x + 1
-	movff	ball_y, temp_y
-	movff	ball_y + 1, temp_y + 1
-	movf	POSTINC0, W	    ; x-offset
-	subwf	temp_x
-	movlw	0
-	subwfb	temp_x + 1
-	movf	POSTINC0, W	    ; y-offset
-	addwf	temp_y
-	movlw	0
-	addwfc	temp_y + 1
-	call	Graphics_Plot_temp_xy
-	decfsz	counter
-	bra	draw_ball_nxpy
-	
+	movwf	circle_divisor
+	call	Graphics_circle_sd
 	return
 	
 ; Draws the ball as a point.
@@ -318,10 +278,10 @@ Graphics_ball_point
 	bsf	LATD, 2		; CS2 raise
 
 	movlw	1
-	call	LCD_delay_x4us
+;	call	LCD_delay_x4us
 
 	bcf	LATD, 0		; LDAC low edge (write)
-	call	LCD_delay_x4us
+;	call	LCD_delay_x4us
 	bsf	LATD, 0		
 	return
 	
@@ -338,133 +298,22 @@ Graphics_slimes
 ;   Draws slime using ball graphics ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Graphics_slime_0
-	; Draw +ve quadrant
-	lfsr	FSR0, ball_points_ram
-	movlw	ball_points_count
-	movwf 	counter	
-draw_slime_0_pxpy
-	movff	slime_0_x, temp_x
-	movff	slime_0_x + 1, temp_x + 1
-	movff	slime_0_y, temp_y
-	movff	slime_0_y + 1, temp_y + 1
-
-	movf	POSTINC0, W	    ; x-offset
-	mullw	.4		    ; PRODH:PRODL
-	movf	PRODL, W
-	addwf	temp_x
-	movf	PRODH, W
-	addwfc	temp_x + 1
-	movf	POSTINC0, W	    ; y-offset
-	mullw	.4		    ; PRODH:PRODL
-	movf	PRODL, W
-	addwf	temp_y
-	movf	PRODH, W
-	addwfc	temp_y + 1
-	call	Graphics_Plot_temp_xy
-	decfsz	counter
-	bra	draw_slime_0_pxpy
-	
-;	; Draw -x quadrant
-	lfsr	FSR0, ball_points_ram
-	movlw	ball_points_count
-	movwf 	counter	
-draw_slime_0_nxpy
-	movff	slime_0_x, temp_x
-	movff	slime_0_x + 1, temp_x + 1
-	movff	slime_0_y, temp_y
-	movff	slime_0_y + 1, temp_y + 1
-	movf	POSTINC0, W	    ; x-offset
-	mullw	.4		    ; PRODH:PRODL
-	movf	PRODL, W
-	subwf	temp_x
-	movf	PRODH, W
-	subwfb	temp_x + 1
-	movf	POSTINC0, W	    ; y-offset
-	mullw	.4		    ; PRODH:PRODL
-	movf	PRODL, W
-	addwf	temp_y
-	movf	PRODH, W
-	addwfc	temp_y + 1
-	call	Graphics_Plot_temp_xy
-	decfsz	counter
-	bra	draw_slime_0_nxpy
-	
-	
-	; Draw eye
 	movff	slime_0_x, circle_x
 	movff	slime_0_x + 1, circle_x + 1
 	movff	slime_0_y, circle_y
 	movff	slime_0_y + 1, circle_y + 1
-	
-	movlb	3
-	movlw	slime_eye_offset
-	addwf	circle_x, BANKED
-	movlw	0
-	addwfc	circle_x + 1, BANKED
-	movlw	slime_eye_offset
-	addwf	circle_y, BANKED
-	movlw	0
-	addwfc	circle_y + 1, BANKED
-	
-	movlw	0
-	movwf	circle_divisor, BANKED
-	call	Graphics_circle
+	call	Graphics_Slime_circle
 	return
 	
 ;;;;;	DRAW SLIME 1 GRAPHICS	;;;;;
 ;   Draws slime using ball graphics ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Graphics_slime_1
-	; Draw +ve quadrant
-	lfsr	FSR0, ball_points_ram
-	movlw	ball_points_count
-	movwf 	counter	
-draw_slime_1_pxpy
-	movff	slime_1_x, temp_x
-	movff	slime_1_x + 1, temp_x + 1
-	movff	slime_1_y, temp_y
-	movff	slime_1_y + 1, temp_y + 1
-
-	movf	POSTINC0, W	    ; x-offset
-	mullw	.4		    ; PRODH:PRODL
-	movf	PRODL, W
-	addwf	temp_x
-	movf	PRODH, W
-	addwfc	temp_x + 1
-	movf	POSTINC0, W	    ; y-offset
-	mullw	.4		    ; PRODH:PRODL
-	movf	PRODL, W
-	addwf	temp_y
-	movf	PRODH, W
-	addwfc	temp_y + 1
-	call	Graphics_Plot_temp_xy
-	decfsz	counter
-	bra	draw_slime_1_pxpy
-	
-;	; Draw -x quadrant
-	lfsr	FSR0, ball_points_ram
-	movlw	ball_points_count
-	movwf 	counter	
-draw_slime_1_nxpy
-	movff	slime_1_x, temp_x
-	movff	slime_1_x + 1, temp_x + 1
-	movff	slime_1_y, temp_y
-	movff	slime_1_y + 1, temp_y + 1
-	movf	POSTINC0, W	    ; x-offset
-	mullw	.4		    ; PRODH:PRODL
-	movf	PRODL, W
-	subwf	temp_x
-	movf	PRODH, W
-	subwfb	temp_x + 1
-	movf	POSTINC0, W	    ; y-offset
-	mullw	.4		    ; PRODH:PRODL
-	movf	PRODL, W
-	addwf	temp_y
-	movf	PRODH, W
-	addwfc	temp_y + 1
-	call	Graphics_Plot_temp_xy
-	decfsz	counter
-	bra	draw_slime_1_nxpy
+	movff	slime_1_x, circle_x
+	movff	slime_1_x + 1, circle_x + 1
+	movff	slime_1_y, circle_y
+	movff	slime_1_y + 1, circle_y + 1
+	call	Graphics_Slime_circle
 	return
 	
 Graphics_Plot_temp_xy	
@@ -489,19 +338,137 @@ Graphics_Plot_temp_xy
 	bsf	LATD, 2		; CS2 raise
 
 	movlw	1
-;	call	LCD_delay_x4us
 
 	bcf	LATD, 0		; LDAC low edge (write)
-;	call	LCD_delay_x4us
 	bsf	LATD, 0		
 	return
 	
+; Draws Slime positioned at circle_x, circle_y.
+Graphics_Slime_circle	
+	; Draw +x quadrant
+	lfsr	FSR0, circle_hd_points_ram
+	movlw	circle_hd_points_count
+	movwf 	counter	
+draw_slime_pxpy
+	movff	circle_x, temp_x
+	movff	circle_x + 1, temp_x + 1
+	movff	circle_y, temp_y
+	movff	circle_y + 1, temp_y + 1
+
+	movf	POSTINC0, W	    ; x-offset
+	mullw	slime_radius_multiplier		    ; PRODH:PRODL
+	movf	PRODL, W
+	addwf	temp_x
+	movf	PRODH, W
+	addwfc	temp_x + 1
+	movf	POSTINC0, W	    ; y-offset
+	mullw	slime_radius_multiplier		    ; PRODH:PRODL
+	movf	PRODL, W
+	addwf	temp_y
+	movf	PRODH, W
+	addwfc	temp_y + 1
+	call	Graphics_Plot_temp_xy
+	decfsz	counter
+	bra	draw_slime_pxpy
+	
+;	; Draw -x quadrant
+	lfsr	FSR0, circle_hd_points_ram
+	movlw	circle_hd_points_count
+	movwf 	counter	
+draw_slime_nxpy
+	movff	circle_x, temp_x
+	movff	circle_x + 1, temp_x + 1
+	movff	circle_y, temp_y
+	movff	circle_y + 1, temp_y + 1
+	movf	POSTINC0, W	    ; x-offset
+	mullw	slime_radius_multiplier		    ; PRODH:PRODL
+	movf	PRODL, W
+	subwf	temp_x
+	movf	PRODH, W
+	subwfb	temp_x + 1
+	movf	POSTINC0, W	    ; y-offset
+	mullw	slime_radius_multiplier		    ; PRODH:PRODL
+	movf	PRODL, W
+	addwf	temp_y
+	movf	PRODH, W
+	addwfc	temp_y + 1
+	call	Graphics_Plot_temp_xy
+	decfsz	counter
+	bra	draw_slime_nxpy
+	
+	
+	movlb	3
+	
+	; Draw base
+	; set temp_x, temp_y to left of slime, set draw_line_end to right of slime
+	movff	circle_x, temp_x
+	movff	circle_x + 1, temp_x + 1
+	movff	circle_y, temp_y
+	movff	circle_y + 1, temp_y + 1
+	
+	movlw	low(slime_radius)
+	subwf	temp_x, f
+	movlw	high(slime_radius)
+	subwfb	temp_x + 1, f	
+	
+	movff	circle_x, draw_line_end
+	movff	circle_x + 1, draw_line_end + 1
+	
+	movlw	low(slime_radius)
+	addwf	draw_line_end, f, BANKED
+	movlw	high(slime_radius)
+	addwfc	draw_line_end + 1, f, BANKED
+	
+	call	Graphics_draw_hline
+	
+	; Draw eye
+	movlw	slime_eye_offset
+	addwf	circle_y, BANKED
+	movlw	0
+	addwfc	circle_y + 1, BANKED
+	
+	movff	circle_x, compare_2B_1
+	movff	circle_x + 1, compare_2B_1 + 1
+	movlw	low(net_x)
+	movwf	compare_2B_2
+	movlw	high(net_x)
+	movwf	compare_2B_2 + 1
+	call	Compare_2B		    ; (circle_x > net_x) in W
+	tstfsz	WREG			    ; Skip if circle_x < net_x
+	bra	offset_right_slime_eye
+	bra	offset_left_slime_eye
+
+offset_left_slime_eye
+	movlw	slime_eye_offset
+	addwf	circle_x, BANKED
+	movlw	0
+	addwfc	circle_x + 1, BANKED
+	bra	draw_eye_and_pupil
+offset_right_slime_eye
+	movlw	slime_eye_offset
+	subwf	circle_x, BANKED
+	movlw	0
+	subwfb	circle_x + 1, BANKED
+	
+	; Draw eye
+draw_eye_and_pupil
+	; big eye
+	movlw	0
+	movwf	circle_divisor, BANKED
+	call	Graphics_circle_lowd
+	; pupil
+	movlw	2
+	movwf	circle_divisor, BANKED
+	call	Graphics_circle_lowd
+	
+
+	return
 	
 ; Draws circle at circle_x, circle_y, scaled down by 2^circle_divisor
-Graphics_circle	
+Graphics_circle_sd	
 	; Draw +ve quadrant
-	lfsr	FSR0, ball_points_ram
-	movlw	ball_points_count
+	lfsr	FSR0, circle_sd_points_ram
+	movlw	circle_sd_points_count
 	movwf 	counter	
 draw_circle_pxpy
 	movff	circle_x, temp_x
@@ -524,8 +491,8 @@ draw_circle_pxpy
 	bra	draw_circle_pxpy
 	
 ;	; Draw -y quadrant
-	lfsr	FSR0, ball_points_ram
-	movlw	ball_points_count
+	lfsr	FSR0, circle_sd_points_ram
+	movlw	circle_sd_points_count
 	movwf 	counter	
 draw_circle_pxny
 	movff	circle_x, temp_x
@@ -547,8 +514,8 @@ draw_circle_pxny
 	bra	draw_circle_pxny
 	
 	; Draw -x-y quadrant
-	lfsr	FSR0, ball_points_ram
-	movlw	ball_points_count
+	lfsr	FSR0, circle_sd_points_ram
+	movlw	circle_sd_points_count
 	movwf 	counter	
 draw_circle_nxny
 	movff	circle_x, temp_x
@@ -570,8 +537,8 @@ draw_circle_nxny
 	bra	draw_circle_nxny
 	
 	; Draw -x quadrant
-	lfsr	FSR0, ball_points_ram
-	movlw	ball_points_count
+	lfsr	FSR0, circle_sd_points_ram
+	movlw	circle_sd_points_count
 	movwf 	counter	
 draw_circle_nxpy
 	movff	circle_x, temp_x
@@ -605,6 +572,209 @@ divide_loop
 	decfsz	counter_1, f
 	bra	divide_loop
 	return
+	
+	
+; Draws a horizontal line starting at temp_x, to draw_line_end with increments of wall_step
+Graphics_draw_hline
+	; Increase temp_x until draw_line_end
+draw_line
+	call	Graphics_Plot_temp_xy
+	movlw	wall_step
+	addwf	temp_x, f
+	movlw	0
+	addwfc	temp_x + 1
+	
+	movff	draw_line_end, compare_2B_1
+	movff	draw_line_end + 1, compare_2B_1 + 1	; 2B_1 = draw_line_end
+	movff	temp_x, compare_2B_2
+	movff	temp_x + 1, compare_2B_2 + 1		; 2B_2 = temp_x
+	call	Compare_2B				; (draw_line_end > temp_x) in W	
+	tstfsz	WREG					; Skip if draw_line_end <= temp_x
+	bra	draw_line
+	return
+	
+	
+Graphics_scores
+	movlb	.3
+	; Player 0 score
+	
+	; Set counter to game_max_points, decrement to zero, plotting empty circle
+	movlw	low(scoreboard_height)
+	movwf	circle_y, BANKED
+	movlw	high(scoreboard_height)
+	movwf	circle_y + 1, BANKED
+	
+	movlw	low(scoreboard_left)
+	movwf	circle_x, BANKED
+	movlw	high(scoreboard_left)
+	movwf	circle_x + 1, BANKED
+	
+	
+
+	movlw	1
+	movwf	counter_scores, BANKED
+	
+player_0_score_loop
+	movlw	1
+	movwf	circle_divisor, BANKED
+	call	Graphics_circle_lowd
+	
+	; If counter_scores <= player_0_score, fill circle
+	movlw	2
+	movwf	circle_divisor, BANKED
+	movf	player_0_score, W
+	cpfsgt	counter_scores, BANKED	    ; Skip if counter_scores > player_0_scores
+	call	Graphics_circle_lowd
+	
+	; Shift to next circle
+	movlw	low(scoreboard_padding)
+	addwf	circle_x, f, BANKED
+	movlw	high(scoreboard_padding)
+	addwfc	circle_x + 1, BANKED
+	
+	incf	counter_scores, f, BANKED
+	movlw	game_max_points
+	cpfsgt	counter_scores		    ; Skip if counter_scores > game_max_points
+	bra	player_0_score_loop
+	
+	; PLAYER 1 SCORE
+	
+	movlw	low(scoreboard_height)
+	movwf	circle_y, BANKED
+	movlw	high(scoreboard_height)
+	movwf	circle_y + 1, BANKED
+	
+	movlw	low(scoreboard_right)
+	movwf	circle_x, BANKED
+	movlw	high(scoreboard_right)
+	movwf	circle_x + 1, BANKED
+	
+	
+
+	movlw	1
+	movwf	counter_scores, BANKED
+	
+player_1_score_loop
+	movlw	1
+	movwf	circle_divisor, BANKED
+	call	Graphics_circle_lowd
+	
+	; If counter_scores <= player_0_score, fill circle
+	movlw	2
+	movwf	circle_divisor, BANKED
+	movf	player_1_score, W
+	cpfsgt	counter_scores, BANKED	    ; Skip if counter_scores > player_0_scores
+	call	Graphics_circle_lowd
+	
+	; Shift to next circle
+	movlw	low(scoreboard_padding)
+	subwf	circle_x, f, BANKED
+	movlw	high(scoreboard_padding)
+	subwfb	circle_x + 1, BANKED
+	
+	incf	counter_scores, f, BANKED
+	movlw	game_max_points
+	cpfsgt	counter_scores		    ; Skip if counter_scores > game_max_points
+	bra	player_1_score_loop
+	return
+	
+
+; Draws lowd circle at circle_x, circle_y, scaled down by 2^circle_divisor
+Graphics_circle_lowd	
+	; Draw +ve quadrant
+	lfsr	FSR0, circle_lowd_points_ram
+	movlw	circle_lowd_points_count
+	movwf 	counter	
+draw_circle_lowd_pxpy
+	movff	circle_x, temp_x
+	movff	circle_x + 1, temp_x + 1
+	movff	circle_y, temp_y
+	movff	circle_y + 1, temp_y + 1
+
+	movf	POSTINC0, W	    ; x-offset
+	call	Divide_W_by_2_cd
+	addwf	temp_x
+	movlw	0
+	addwfc	temp_x + 1
+	movf	POSTINC0, W	    ; y-offset
+	call	Divide_W_by_2_cd
+	addwf	temp_y
+	movlw	0
+	addwfc	temp_y + 1
+	call	Graphics_Plot_temp_xy
+	decfsz	counter
+	bra	draw_circle_lowd_pxpy
+	
+;	; Draw -y quadrant
+	lfsr	FSR0, circle_lowd_points_ram
+	movlw	circle_lowd_points_count
+	movwf 	counter	
+draw_circle_lowd_pxny
+	movff	circle_x, temp_x
+	movff	circle_x + 1, temp_x + 1
+	movff	circle_y, temp_y
+	movff	circle_y + 1, temp_y + 1
+	movf	POSTINC0, W	    ; x-offset
+	call	Divide_W_by_2_cd
+	addwf	temp_x
+	movlw	0
+	addwfc	temp_x + 1
+	movf	POSTINC0, W	    ; y-offset
+	call	Divide_W_by_2_cd
+	subwf	temp_y
+	movlw	0
+	subwfb	temp_y + 1
+	call	Graphics_Plot_temp_xy
+	decfsz	counter
+	bra	draw_circle_lowd_pxny
+	
+	; Draw -x-y quadrant
+	lfsr	FSR0, circle_lowd_points_ram
+	movlw	circle_lowd_points_count
+	movwf 	counter	
+draw_circle_lowd_nxny
+	movff	circle_x, temp_x
+	movff	circle_x + 1, temp_x + 1
+	movff	circle_y, temp_y
+	movff	circle_y + 1, temp_y + 1
+	movf	POSTINC0, W	    ; x-offset
+	call	Divide_W_by_2_cd
+	subwf	temp_x
+	movlw	0
+	subwfb	temp_x + 1
+	movf	POSTINC0, W	    ; y-offset
+	call	Divide_W_by_2_cd
+	subwf	temp_y
+	movlw	0
+	subwfb	temp_y + 1
+	call	Graphics_Plot_temp_xy
+	decfsz	counter
+	bra	draw_circle_lowd_nxny
+	
+	; Draw -x quadrant
+	lfsr	FSR0, circle_lowd_points_ram
+	movlw	circle_lowd_points_count
+	movwf 	counter	
+draw_circle_lowd_nxpy
+	movff	circle_x, temp_x
+	movff	circle_x + 1, temp_x + 1
+	movff	circle_y, temp_y
+	movff	circle_y + 1, temp_y + 1
+	movf	POSTINC0, W	    ; x-offset
+	call	Divide_W_by_2_cd
+	subwf	temp_x
+	movlw	0
+	subwfb	temp_x + 1
+	movf	POSTINC0, W	    ; y-offset
+	call	Divide_W_by_2_cd
+	addwf	temp_y
+	movlw	0
+	addwfc	temp_y + 1
+	call	Graphics_Plot_temp_xy
+	decfsz	counter
+	bra	draw_circle_lowd_nxpy
+	return
+	
 	
 	end
 

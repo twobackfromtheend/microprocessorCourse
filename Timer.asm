@@ -10,11 +10,12 @@ Timer_Interrupt	code	0x0008	; high vector, no low vector
 	retfie	FAST		; if not then return
 	
 	; Toggle bit 7 on PORTD
-	movlw	b'10000000'
-	xorwf	LATD, f
+	bcf	LATD, 7
 	
 	call	Game_Loop
 	
+	; Toggle bit 7 on PORTD
+	bsf	LATD, 7
 		
 	bcf	INTCON, TMR0IF	; clear interrupt flag
 	retfie	FAST		; fast return from interrupt

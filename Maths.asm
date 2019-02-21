@@ -3,7 +3,7 @@
     global  Mul_8_16, Mul_16_16, Mul_8_24
     global  Compare_2B, compare_2B_1, compare_2B_2
     global  Absolute_2B
-    global  Divide_8_2B, Multiply_2_2B
+    global  Divide_4_2B, Divide_8_2B, Multiply_2_2B
     global  Mul_16_16_2s_complement
     global  Divide_4B_4096
 
@@ -221,6 +221,55 @@ no_round_ndiv
 	rrcf	INDF0, f
 	return
 round_ndiv
+	rrcf	PLUSW0, f
+	rrcf	INDF0, f
+	movlw	1
+	addwf	INDF0, f
+	movlw	0
+	addwfc	PLUSW0, f
+	return
+	
+; Divides a 2s complement number in FSR0 by 4, places back.
+Divide_4_2B
+	movlw	1
+	btfsc	PLUSW0, 7	    ; Skip if bit is clear (is positive).
+	bra	negative_division4
+positive_division4
+	bcf	STATUS, C	    ; Clear carry flag
+	rrcf	PLUSW0, f	    ; Rotate top byte, carry to lower byte
+	rrcf	INDF0, f	
+	
+	bcf	STATUS, C	    ; Clear carry flag
+	; Divide and round last bit
+	btfsc	INDF0, 0	    ; If last bit is clear, do not round
+	bra	round_pdiv4
+no_round_pdiv4
+	rrcf	PLUSW0, f
+	rrcf	INDF0, f
+	return
+round_pdiv4
+	rrcf	PLUSW0, f
+	rrcf	INDF0, f
+	movlw	1
+	addwf	INDF0, f
+	movlw	0
+	addwfc	PLUSW0, f
+	return
+	
+negative_division4
+	bsf	STATUS, C	    ; Set carry flag (pad left with 1s)
+	rrcf	PLUSW0, f
+	rrcf	INDF0, f	
+	
+	bsf	STATUS, C	    ; Set carry flag (pad left with 1s)
+	; Divide and round last bit
+	btfsc	INDF0, 0	    ; If last bit is clear, do not round
+	bra	round_ndiv4
+no_round_ndiv4
+	rrcf	PLUSW0, f
+	rrcf	INDF0, f
+	return
+round_ndiv4
 	rrcf	PLUSW0, f
 	rrcf	INDF0, f
 	movlw	1

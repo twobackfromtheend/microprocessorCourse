@@ -2,7 +2,9 @@
 #include constants.inc
 
 	global	Game_Setup, Game_Loop
-
+	global	player_0_score, player_1_score
+	
+	
 	extern	Ball_Step, ball_x, ball_y, ball_vx, ball_vy
 	extern	Slime_Step
 	extern	slime_0_x, slime_0_y, slime_0_vx, slime_0_vy
@@ -10,12 +12,14 @@
 	
 	extern  LCD_Setup, LCD_Write_Message, LCD_Clear, LCD_Cursor_To_Start, LCD_Cursor_To_Line_2
 	extern	LCD_Write_Hex, LCD_Write_Hex_Message_2B
-	extern	LCD_delay_ms
 	extern	SPI_Transmit_12b, SPI_Transmit_ball_xy
-	extern	Graphics_wall, Graphics_net, Graphics_ball, Graphics_slimes
+	extern	Graphics_wall, Graphics_net, Graphics_ball, Graphics_slimes, Graphics_scores
 	
 	
     	extern  Compare_2B, compare_2B_1, compare_2B_2
+	
+	
+	extern  Delay_s, Delay_ms, Delay_x4us, Delay_250_ns
 
 	
 	constant    ball_y_lava = wall_y_lower + ball_radius
@@ -30,14 +34,21 @@ last_player_scored  res	1
 bank2   udata	0x200
 player_0_scored_message_ram res .16
 player_1_scored_message_ram res .16
+player_0_won_message_ram    res	.13
+player_1_won_message_ram    res	.13
+
 counter	res 1
 
 
 pdata	code    ; a section of programme memory for storing data
 player_0_scored_message data	    "Player 0 scored!"
 player_1_scored_message data	    "Player 1 scored!"
-	constant    player_scored_message_length=.16
-	
+ 	constant    player_scored_message_length=.16
+
+player_0_won_message data	    "Player 0 won!"
+player_1_won_message data	    "Player 1 won!"
+	constant    player_won_message_length=.13
+
 	
 Game code
  
@@ -83,6 +94,39 @@ write_1_scored_loop
 	movff	TABLAT, POSTINC0
 	decfsz	counter, BANKED
 	bra	write_1_scored_loop
+	
+	
+ 	lfsr	FSR0, player_0_won_message_ram
+	movlw	upper(player_0_won_message)
+	movwf	TBLPTRU
+	movlw	high(player_0_won_message)
+	movwf	TBLPTRH
+	movlw	low(player_0_won_message)
+	movwf	TBLPTRL
+	movlw	player_won_message_length
+	movwf 	counter, BANKED
+write_0_won_loop
+	tblrd*+	
+	movff	TABLAT, POSTINC0
+	decfsz	counter, BANKED
+	bra	write_0_won_loop
+	
+	
+ 	lfsr	FSR0, player_1_won_message_ram
+	movlw	upper(player_1_won_message)
+	movwf	TBLPTRU
+	movlw	high(player_1_won_message)
+	movwf	TBLPTRH
+	movlw	low(player_1_won_message)
+	movwf	TBLPTRL
+	movlw	player_won_message_length
+	movwf 	counter, BANKED
+write_1_won_loop
+	tblrd*+	
+	movff	TABLAT, POSTINC0
+	decfsz	counter, BANKED
+	bra	write_1_won_loop
+	
 	return
 	
 ; GAME STATE
@@ -152,12 +196,16 @@ Game_Loop
 	call	Ball_Step
 	call	Slime_Step
 	
-	call	Graphics_wall
-	call	Graphics_net
 	call	Graphics_ball
 	call	Graphics_slimes
+	call	Graphics_scores
+	call	Graphics_wall
+	call	Graphics_net
+
 	call	Check_Point_End
 	call	Update_LCD
+	
+	call	Check_Game_End
 	return
 	
 Check_Point_End
@@ -208,16 +256,8 @@ player_0_scores
 	call	LCD_Write_Message
 	
 post_point_cleanup
-	movlw	.200
-	call	LCD_delay_ms
-	movlw	.200
-	call	LCD_delay_ms
-	movlw	.200
-	call	LCD_delay_ms
-	movlw	.200
-	call	LCD_delay_ms
-	movlw	.200
-	call	LCD_delay_ms
+	movlw	point_end_wait
+	call	Delay_s
 	
 	call	Set_Game_Start_State
 	
@@ -231,6 +271,36 @@ Update_LCD
 	movf	player_1_score, W
 	call	LCD_Write_Hex
 	return
+	
+; Checks if either player's points = game_max_points
+; Calls Game_Setup after.
+Check_Game_End
+	movlw	game_max_points
+	cpfslt	player_0_score		; Skip if score < max_points
+	bra	player_0_wins
+	cpfslt	player_1_score		; Skip if score < max_points
+	bra	player_1_wins
+	return
+	
+player_0_wins	
+	call	LCD_Clear
+	lfsr	FSR2, player_0_won_message_ram
+	movlw	player_won_message_length
+	call	LCD_Write_Message
+	bra	reset_point
+player_1_wins
+	call	LCD_Clear
+	lfsr	FSR2, player_1_won_message_ram
+	movlw	player_won_message_length
+	call	LCD_Write_Message
+	
+reset_point
+	movlw	game_end_wait
+	call	Delay_s
+	
+	call	Game_Setup
+	return
+	
 	
 	end
 

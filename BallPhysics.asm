@@ -10,7 +10,7 @@
 	extern	slime_1_x, slime_1_y, slime_1_vx, slime_1_vy
 	extern  Compare_2B, compare_2B_1, compare_2B_2
 	extern	Absolute_2B
-	extern	Divide_8_2B, Multiply_2_2B
+	extern	Divide_4_2B, Divide_8_2B, Multiply_2_2B
 	extern	Mul_16_16_2s_complement
 	extern	Divide_4B_4096
 	
@@ -298,7 +298,7 @@ Collide_With_Net
 	; Top bounce, flip ball_vy
 	btfss	ball_vy + 1, 7		    ; Skip if ball_vy < 0
 	bra	net_side_bounce
-	movlw	ball_net_top_bounce_limit
+	movlw	low(ball_net_top_bounce_limit)
 	cpfsgt	ball_y			    ; Know ball_y is 1 byte already, skip if ball_y > ball_net_top_bounce_limit
 	bra	net_side_bounce
 	call	Reverse_ball_vy
@@ -467,12 +467,15 @@ continue_check_2
 
 do_collide
 	; Calculate norm_dists
+	; Assume distance is approx 512
 	; distance_xORy = distance_xORy / 8  (represents 64x number)
 	lfsr	FSR0, distance_x
 	call	Divide_8_2B
+;	call	Divide_4_2B
 	lfsr	FSR0, distance_y
 	call	Divide_8_2B
-	
+;	call	Divide_4_2B
+
 	; Displacement vector is from slime to ball
 	; Calculate relative velocities = ball_v - slime_v
 	; x
