@@ -1,6 +1,8 @@
 #include p18f87k22.inc
 
-	global  Delay_s, Delay_ms, Delay_x4us, Delay_250_ns
+	global  Delay_With_Plot_s, Delay_s, Delay_ms, Delay_x4us, Delay_250_ns
+	
+	extern	Game_Plot_Loop
     
 
 acs0    udata_acs   ; named variables in access ram
@@ -10,6 +12,37 @@ delay_counter_ms    res 1   ; reserve 1 byte for ms counter
 delay_counter_s	    res 1
 
 Delay	code
+	
+Delay_With_Plot_s
+	movwf	delay_counter_s
+delay_with_plot_s_loop
+	bcf	LATD, 7
+	call	Game_Plot_Loop
+	bsf	LATD, 7
+	movlw	.210
+	call	Delay_ms
+	
+	bcf	LATD, 7
+	call	Game_Plot_Loop
+	bsf	LATD, 7
+	movlw	.210
+	call	Delay_ms
+	
+	bcf	LATD, 7
+	call	Game_Plot_Loop
+	bsf	LATD, 7
+	movlw	.210
+	call	Delay_ms
+	
+	bcf	LATD, 7
+	call	Game_Plot_Loop
+	bsf	LATD, 7
+	movlw	.210
+	call	Delay_ms
+	
+	decfsz	delay_counter_s
+	bra	delay_with_plot_s_loop
+	return
 	
 ; Delays WREG seconds
 Delay_s

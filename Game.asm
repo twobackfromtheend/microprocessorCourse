@@ -1,7 +1,8 @@
 #include p18f87k22.inc
 #include constants.inc
 
-	global	Game_Setup, Game_Loop
+	global	Game_Setup, Game_Loop, Game_Plot_Loop
+
 	global	player_0_score, player_1_score
 	
 	
@@ -12,14 +13,16 @@
 	
 	extern  LCD_Setup, LCD_Write_Message, LCD_Clear, LCD_Cursor_To_Start, LCD_Cursor_To_Line_2
 	extern	LCD_Write_Hex, LCD_Write_Hex_Message_2B
-	extern	SPI_Transmit_12b, SPI_Transmit_ball_xy
 	extern	Graphics_wall, Graphics_net, Graphics_ball, Graphics_slimes, Graphics_scores
+	
+	extern P1_Scored_Image_Plot
 	
 	
     	extern  Compare_2B, compare_2B_1, compare_2B_2
 	
 	
-	extern  Delay_s, Delay_ms, Delay_x4us, Delay_250_ns
+	extern  Delay_With_Plot_s, Delay_s, Delay_ms, Delay_x4us, Delay_250_ns
+
 
 	
 	constant    ball_y_lava = wall_y_lower + ball_radius
@@ -196,16 +199,23 @@ Game_Loop
 	call	Ball_Step
 	call	Slime_Step
 	
+	call	Ball_Step
+	call	Slime_Step
+	
+	call	Check_Point_End
+	call	Update_LCD
+	
+	call	Check_Game_End
+	return
+	
+Game_Plot_Loop
+;	call	P1_Scored_Image_Plot
+;	
 	call	Graphics_ball
 	call	Graphics_slimes
 	call	Graphics_scores
 	call	Graphics_wall
 	call	Graphics_net
-
-	call	Check_Point_End
-	call	Update_LCD
-	
-	call	Check_Game_End
 	return
 	
 Check_Point_End
@@ -257,7 +267,7 @@ player_0_scores
 	
 post_point_cleanup
 	movlw	point_end_wait
-	call	Delay_s
+	call	Delay_With_Plot_s
 	
 	call	Set_Game_Start_State
 	
@@ -296,7 +306,7 @@ player_1_wins
 	
 reset_point
 	movlw	game_end_wait
-	call	Delay_s
+	call	Delay_With_Plot_s
 	
 	call	Game_Setup
 	return

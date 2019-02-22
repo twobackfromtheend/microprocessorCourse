@@ -178,22 +178,23 @@ _higher_x_end
 	
 	;;; Y AXIS
 	; LOWER Y
-	btfss	ball_vy + 1, 7	    ; skip if ball_vy is negative
-	bra	_lower_y_end
-_lower_y_condition_1
-	btfss	ball_y + 1, 7	    ; skip if ball_y + 1 is negative
-	bra	_lower_y_condition_2
-	call	Reverse_ball_vy
-	bra	_lower_y_end
-_lower_y_condition_2
-	tstfsz	ball_y + 1	    ; skip if ball_y + 1 is 0
-	bra	_lower_y_end
-	movlw	ball_wall_y_lower	    ; cpfslt - skip if f < W
-	cpfslt	ball_y		    ; skip if ball_y (lower) (positive) < wall_y_lower (positive)
-	bra	_lower_y_end
-	call	Reverse_ball_vy
-_lower_y_end
-	nop
+;	btfss	ball_vy + 1, 7	    ; skip if ball_vy is negative
+;	bra	_lower_y_end
+;_lower_y_condition_1
+;	btfss	ball_y + 1, 7	    ; skip if ball_y + 1 is negative
+;	bra	_lower_y_condition_2
+;	call	Reverse_ball_vy
+;	bra	_lower_y_end
+;_lower_y_condition_2
+;	tstfsz	ball_y + 1	    ; skip if ball_y + 1 is 0
+;	bra	_lower_y_end
+;	movlw	ball_wall_y_lower	    ; cpfslt - skip if f < W
+;	cpfslt	ball_y		    ; skip if ball_y (lower) (positive) < wall_y_lower (positive)
+;	bra	_lower_y_end
+;	call	Reverse_ball_vy
+;_lower_y_end
+;	nop
+	
 	; HIGHER Y
 	btfsc	ball_vy + 1, 7	    ; skip if ball_vy is positive
 	bra	_higher_y_end
@@ -545,7 +546,7 @@ Update_Ball_With_Collision
 	; temp_2B_x *= distance_x
 	lfsr	FSR0, temp_2B_x
 	lfsr	FSR1, distance_x
-	call	Mul_16_16
+	call	Mul_16_16_2s_complement
 	movff	POSTINC2, temp_2B_x
 	movff	INDF2, temp_2B_x + 1		; temp_2B_x = 64 * (slime_vx - 2 * ball_vx) distance_x
 	
@@ -564,7 +565,7 @@ Update_Ball_With_Collision
 	; temp_2B_y *= distance_y
 	lfsr	FSR0, temp_2B_y
 	lfsr	FSR1, distance_y
-	call	Mul_16_16
+	call	Mul_16_16_2s_complement
 	movff	POSTINC2, temp_2B_y
 	movff	INDF2, temp_2B_y + 1		; temp_2B_y = 64 * (slime_vy - 2 * ball_vy) distance_y
 
@@ -579,14 +580,14 @@ Update_Ball_With_Collision
 	lfsr	FSR0, temp_2B_k
 	; temp_4B_x = temp_2B_k * distance_x
 	lfsr	FSR1, distance_x
-	call	Mul_16_16			; Result in FSSR2
+	call	Mul_16_16_2s_complement			; Result in FSR2
 	movff	POSTINC2, temp_4B_x
 	movff	POSTINC2, temp_4B_x + 1
 	movff	POSTINC2, temp_4B_x + 2
 	movff	INDF2, temp_4B_x + 3		; temp_4B_x = k dx
 	; temp_4B_y = temp_2B_k * distance_y
 	lfsr	FSR1, distance_y
-	call	Mul_16_16			; Result in FSSR2
+	call	Mul_16_16_2s_complement			; Result in FSR2
 	movff	POSTINC2, temp_4B_y
 	movff	POSTINC2, temp_4B_y + 1
 	movff	POSTINC2, temp_4B_y + 2

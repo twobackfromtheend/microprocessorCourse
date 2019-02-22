@@ -29,6 +29,7 @@
       <itemPath>Timer.asm</itemPath>
       <itemPath>Game.asm</itemPath>
       <itemPath>Delay.asm</itemPath>
+      <itemPath>p1scored_img.asm</itemPath>
     </logicalFolder>
     <logicalFolder name="ExternalFiles"
                    displayName="Important Files"

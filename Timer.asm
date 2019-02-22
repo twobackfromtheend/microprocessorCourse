@@ -2,7 +2,7 @@
 	
 	global  Timer_Setup
 	
-	extern	Game_Loop
+	extern	Game_Loop, Game_Plot_Loop
 	
 		
 Timer_Interrupt	code	0x0008	; high vector, no low vector
@@ -10,12 +10,15 @@ Timer_Interrupt	code	0x0008	; high vector, no low vector
 	retfie	FAST		; if not then return
 	
 	; Toggle bit 7 on PORTD
-	bcf	LATD, 7
 	
-	call	Game_Loop
+	call	Game_Loop	
+	
+	bcf	LATD, 7
+	call	Game_Plot_Loop
+	bsf	LATD, 7
+
 	
 	; Toggle bit 7 on PORTD
-	bsf	LATD, 7
 		
 	bcf	INTCON, TMR0IF	; clear interrupt flag
 	retfie	FAST		; fast return from interrupt

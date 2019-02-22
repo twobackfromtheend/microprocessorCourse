@@ -10,6 +10,8 @@
 	extern	Main_Setup
 	extern	Game_Setup
 	extern	Timer_Setup
+	
+	extern	P1_Scored_Image_Setup, P1_Scored_Image_Plot
 
 acs0	udata_acs   ; reserve data space in access ram
 ;counter	    res 1   ; reserve one byte for a counter variable
@@ -38,12 +40,14 @@ setup
 ;	call	ADC_Setup
 ;	call	DAC_Setup
 	
+;	call	P1_Scored_Image_Setup
+	
 	call	Main_Setup
 	call	Game_Setup
 	goto	start
 	
 	; ******* Main programme ****************************************
-start 	call	Timer_Setup
+start 	call	Timer_Setup	
 	goto	$
 	return
 	
