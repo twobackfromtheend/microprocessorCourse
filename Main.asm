@@ -14,9 +14,10 @@
     
 Main code
  
- 
+;;;;;	    MAIN SETUP		;;;;;
+;   Calls required hardware setups  ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Main_Setup
-; 	call	UART_Setup	; setup UART
  	movlb	1
 
 	call	LCD_Setup
@@ -28,12 +29,17 @@ Main_Setup
 	return
  
  
-	
+;;;;;	 TEST Graphics_wall	;;;;;
+;   Calls Graphics_wall repeatedly  ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Graphics_wall_Test
 	call	Graphics_wall
 	bra	Graphics_wall_Test
 	return
-
+	
+;;;;;	 TEST Graphics_ball and wall	;;;;;
+;   Calls Graphics_ball and wall repeatedly ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Graphics_ball_wall_Test
 	movlw	0
 	movwf	ball_x

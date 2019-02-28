@@ -12,7 +12,9 @@ delay_counter_ms    res 1   ; reserve 1 byte for ms counter
 delay_counter_s	    res 1
 
 Delay	code
-	
+
+; Delays WREG seconds (inexact - actual duration = 840ms + 4x GamePlotLoops),
+; calls Game_Plot_loop every 210ms (4 times for a delay of roughly 1s)
 Delay_With_Plot_s
 	movwf	delay_counter_s
 delay_with_plot_s_loop
@@ -44,6 +46,9 @@ delay_with_plot_s_loop
 	bra	delay_with_plot_s_loop
 	return
 	
+
+; Below are derived from the provided LCD module, with minimal (mostly naming) changes .
+
 ; Delays WREG seconds
 Delay_s
 	movwf	delay_counter_s
