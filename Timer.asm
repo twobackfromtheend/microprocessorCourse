@@ -9,16 +9,11 @@ Timer_Interrupt code    0x0008  ; high vector, no low vector
     btfss   INTCON, TMR0IF  ; check that this is timer0 interrupt
     retfie  FAST        ; if not then return
 
-    ; Toggle bit 7 on PORTD
-
     call    Game_Loop
 
-    bcf LATD, 7
+    bcf LATD, 7         ; Toggle bit 7 on PORTD
     call    Game_Plot_Loop
-    bsf LATD, 7
-
-
-    ; Toggle bit 7 on PORTD
+    bsf LATD, 7         ; Toggle bit 7 on PORTD (Trigger)
 
     bcf INTCON, TMR0IF  ; clear interrupt flag
     retfie  FAST        ; fast return from interrupt
@@ -35,15 +30,9 @@ Timer_Setup
     movlw   b'10000010'
     ; approx 30ms frame
 
-
-;   movlw   b'10000111' ; Set timer0 to 16-bit, Fosc/4/256
-    ; Approx 1Hz
-
-;   movlw   b'11000000' ; Set timer0 to 8-bit, Fosc/4/256
-
-    movwf   T0CON       ; = 62.5KHz clock rate, approx 1sec rollover
+    movwf   T0CON
     bsf INTCON,TMR0IE   ; Enable timer0 interrupt
-    bsf INTCON,GIE  ; Enable all interrupts
+    bsf INTCON,GIE      ; Enable all interrupts
     return
 
 

@@ -9,7 +9,7 @@ rst code    0
 
 
 main    code
-    ; ******* Programme FLASH read Setup Code ***********************
+
 setup
     ; Setup to allow Flash program memory access (provided)
     bcf EECON1, CFGS    ; point to Flash program memory
@@ -20,7 +20,7 @@ setup
     call    Game_Setup
     goto    start
 
-    ; ******* Main programme ****************************************
+
 start
     call    Timer_Setup
     goto    $       ; Loop and allow Timer to trigger interrupts

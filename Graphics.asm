@@ -4,9 +4,6 @@
     global  Graphics_Setup
     global  Graphics_wall, Graphics_net, Graphics_ball, Graphics_slimes, Graphics_scores
 
-    ; Exported for images
-    global  Graphics_circle_lowd, circle_x, circle_y, circle_divisor
-
     extern  ball_x, ball_y
     extern  slime_0_x, slime_0_y, slime_1_x, slime_1_y
 

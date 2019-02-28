@@ -11,19 +11,19 @@ acs0    udata_acs   ; named variables in access ram
 result_24   res 3
 result_32   res 4
 
+; Arguments for Compare_2B
 compare_2B_1    res 2
 compare_2B_2    res 2
 
+; temporary variables
 _lower_prodl    res 1
 _lower_prodh    res 1
 
-
 _sign_check res 1
 
+; Used for multiplying 2s complement numbers - absolute values are multiplied, sign corrected after.
 positive_multiplier_1   res 2
 positive_multiplier_2   res 2
-;acs_ovr    access_ovr
-
 
 
 Maths   code
@@ -48,18 +48,6 @@ Mul_8_16
     movlw   0
     addwfc  PRODH, W
     movwf   result_24 + 2
-
-    ; Below is old code that shifts result to FSR2.
-;   lfsr    FSR2, result_24
-;   movff   _lower_prodl, POSTINC2
-;
-;   movf    PRODL, W
-;   addwf   _lower_prodh, W
-;   movwf   POSTINC2
-;
-;   movlw   0
-;   addwfc  PRODH, W
-;   movwf   INDF2
 
     lfsr    FSR2, result_24
     return
@@ -279,7 +267,7 @@ negative_multiply
 
 
 ; Multiply 16 bits in FSR0 with 16 bits in FSR1
-; Returned 32 bits in FSR2. FSR0 persists??
+; Returned 32 bits in FSR2. FSR0 persists
 Mul_16_16_2s_complement
     ; Move sign bit from FSR0 to _sign_check
     movlw   1

@@ -93,10 +93,10 @@ Ball_Step
 
     return
 
-;;;;;;;;;;      BALL PROPAGATE                      ;;;;;;;;;;
-;    Propagate current positions by 1 frame (x = x + vt)     ;
-;           Applies gravity                                  ;
-;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;;;;;;;;       BALL PROPAGATE          ;;;;;;;;;
+;    Propagate current positions by 1 frame     ;
+;           Applies gravity                     ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Ball_Propagate
     ; x = x + v, t = 1
     movf    ball_vx, W

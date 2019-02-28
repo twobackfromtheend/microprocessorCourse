@@ -7,16 +7,20 @@
     global  Slime_Step
 
     extern  Mul_16_16
-        extern  Compare_2B, compare_2B_1, compare_2B_2
+    extern  Compare_2B, compare_2B_1, compare_2B_2
 
 
 acs0    udata_acs
-slime_0_x  res  2   ; -32768 to 32767 in 2's complement
+; Positions are stored in 2s complement to aid calculations
+; Known to be positive (and capped at ~4000) - can be used directly in DAC.
+slime_0_x  res  2
 slime_0_y  res  2
-slime_0_vx res  2   ; -32768 to 32767 in 2's complement
-slime_0_vy res  2
 slime_1_x  res  2
 slime_1_y  res  2
+
+; Velocities are -32768 to 32767 in 2's complement
+slime_0_vx res  2
+slime_0_vy res  2
 slime_1_vx res  2
 slime_1_vy res  2
 
@@ -30,10 +34,18 @@ slime_1_vy res  2
 
 SlimePhysics code
 
+
+;;;;;       SLIME SETUP         ;;;;;
+;   Sets PORTC to use as controls   ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Slime_Setup
     setf    TRISC       ; Set PORTC as all inputs
     return
 
+;;;;;       SLIME STEP          ;;;;;
+;   Does 1 physics tick,            ;
+;       gets and uses controls      ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Slime_Step
     call    Update_With_Controls
     call    Slime_0_Propagate
@@ -42,6 +54,11 @@ Slime_Step
 
     return
 
+
+;;;;;       UPDATE WITH CONTROLS    ;;;;;
+;   Updates slime velocities            ;
+;       by looking at controls          ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Update_With_Controls
     ; Slime 0:
     ; PORTC 0 1 2 = UP LEFT RIGHT
@@ -135,7 +152,10 @@ Set_slime_1_vx_end
 
     return
 
-
+;;;;;;;;;       SLIME 0 PROPAGATE       ;;;;;;;;;
+;    Propagate current position by 1 frame      ;
+;           Applies gravity                     ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Slime_0_Propagate
     ; x = x + v, t = 1
     movf    slime_0_vx, W
@@ -163,6 +183,11 @@ post_gravity_0
     call    Set_Slime_0_To_0
     return
 
+
+;;;;;;;;;       SLIME 1 PROPAGATE       ;;;;;;;;;
+;    Propagate current position by 1 frame      ;
+;           Applies gravity                     ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Slime_1_Propagate
     ; x = x + v, t = 1
     movf    slime_1_vx, W
@@ -190,7 +215,7 @@ post_gravity_1
     call    Set_Slime_1_To_0
     return
 
-
+; Set Slime 0's y and vy to 0
 Set_Slime_0_To_0
     movlw   0
     movwf   slime_0_y
@@ -199,6 +224,7 @@ Set_Slime_0_To_0
     movwf   slime_0_vy + 1
     return
 
+; Set Slime 1's y and vy to 0
 Set_Slime_1_To_0
     movlw   0
     movwf   slime_1_y
@@ -207,6 +233,11 @@ Set_Slime_1_To_0
     movwf   slime_1_vy + 1
     return
 
+
+;;;;;      CLIP SLIME POSITIONS     ;;;;;
+;   Clips slime positions to provided   ;
+;       constants                       ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 Clip_Slime_Positions
     ; Ensure slime_0_left_limit <= slime_0_x <= slime_0_right_limit
     movff   slime_0_x, compare_2B_1

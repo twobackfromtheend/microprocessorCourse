@@ -8,7 +8,8 @@
 
     extern  LCD_Setup, LCD_Write_Message, LCD_Clear, LCD_Cursor_To_Start, LCD_Cursor_To_Line_2, LCD_Write_Hex_Message_2B
     extern  LCD_delay_ms
-    extern  SPI_DAC_Setup, SPI_Transmit_12b, SPI_Transmit_ball_xy
+    extern  SPI_DAC_Setup
+    extern  Graph_xy
     extern  Graphics_Setup, Graphics_wall, Graphics_ball, Graphics_slimes
 
 Main code

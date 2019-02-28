@@ -16,10 +16,10 @@
     extern  Graphics_wall, Graphics_net, Graphics_ball, Graphics_slimes, Graphics_scores
 
 
-        extern  Compare_2B, compare_2B_1, compare_2B_2
+    extern  Compare_2B, compare_2B_1, compare_2B_2
 
 
-    extern  Delay_With_Plot_s, Delay_s, Delay_ms, Delay_x4us, Delay_250_ns
+    extern  Delay_With_Plot_s
 
 
     constant    ball_y_lava = wall_y_lower + ball_radius
