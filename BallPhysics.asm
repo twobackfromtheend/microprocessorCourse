@@ -569,7 +569,8 @@ Update_Ball_With_Collision
 	movff	POSTINC2, temp_2B_y
 	movff	INDF2, temp_2B_y + 1		; temp_2B_y = 64 * (slime_vy - 2 * ball_vy) distance_y
 
-	; temp_2B_k = (temp_2B_x + temp_2B_y)
+	; temp_2B_k = (temp_2B_x + temp_2B_y)	; k =  64 * (slime_vx - 2 * ball_vx) distance_x 
+							+ 64 * (slime_vy - 2 * ball_vy) distance_y
 	movff	temp_2B_x, temp_2B_k
 	movff	temp_2B_x + 1, temp_2B_k + 1
 	movf	temp_2B_y, W, BANKED
