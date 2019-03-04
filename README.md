@@ -1,12 +1,20 @@
-# Microprocessors
-Repository for Physics Year 3 microprocessors lab
+# Slime Volleyball
+_in MPASM for a PIC18_
 
-A simple assembly program for PIC18 microprocessor, that counts to 100, putting the current count value out onto PORTB
 
-Reads a table (message) from programme memory to data memory
+## HLD
 
-Initialises UART and writes a message (the table) to UART 
+See `HLD.svg` and `Flowchart.svg` (in a modern browser - these were drawn with draw.io).
 
-Initialises LCD and writes the message to the LCD
+While the former contains a more lax overview, missing out bits and pieces, the latter is much more in-depth (but also gives up after a while - in particular, the physics and maths is not delved into).
 
-Initialises ADC, reads values and display as hex on LCD
+
+The code should be relatively self-commenting, and care has been taken in naming variables, constants, and subroutines (where snake_case is used for the former two, and subroutines are named with capital letters, generally prefixed by the module name).
+
+A particular pain point in this project was MPLABX's complete lack of IDE tools beyond find and replace. In particular, code-folding (being able to collapse subroutines) would have been nice considering the relatively long files. While some files are longer than usual scripts, the filing system used added another layer of encapsulation that was suitable for this project.
+
+
+
+## Photos and videos
+
+can be found https://photos.app.goo.gl/We38AcLWvU8f81dUA.
